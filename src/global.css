@@ -1,0 +1,7 @@
+* { box-sizing: border-box; }
+html { background: #060b14; color-scheme: dark; }
+body { margin: 0; min-width: 320px; background: radial-gradient(circle at 50% -10%, #18243b 0, #060b14 48%); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, table { font: inherit; }
+.page-shell { width: min(1120px, calc(100% - 24px)); margin: 24px auto; }
+.closing { margin-top: 24px; color: #8b94a7; font-size: 13px; }
+@media (max-width: 520px) { .page-shell { width: 100%; margin: 0; } .dark { border-radius: 0; } }
