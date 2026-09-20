@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './style.css';
-import { PRICES, TXS, type Tx } from './data';
+import { PRICES, TXS, MARKET, type Tx } from './data';
 
 // Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 20/09/2026.
 const AVG_COST = 95380;        // Giá vốn TB / BTC (USD)
 const COST_BASIS = 6016.59;    // Giá vốn BTC đang giữ (USD)
 const REALIZED = -100.64;      // Lãi/Lỗ đã chốt (USD)
-const VND_RATE = 26022;        // Tỷ giá USD/VND tự động trong sheet
+const VND_RATE = 26022;        // Tỷ giá USD/VND dùng để quy đổi tham khảo
 
 const HELD = TXS.reduce((s, t) => s + t.btc, 0);
-const PRICE_NOW = PRICES[PRICES.length - 1][1];
+const PRICE_NOW = MARKET.currentPrice;
 const VALUE_NOW = HELD * PRICE_NOW;
 const UNREALIZED = VALUE_NOW - COST_BASIS;
 const UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
@@ -167,6 +167,19 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
                     <strong className={txHover.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{txHover.t.type} · {dateVi(txHover.t.date)}</strong>
                     <span>{btcFmt(Math.abs(txHover.t.btc))} BTC @ {usd0(txHover.t.price)}</span>
                     <span className="ttval">{usd(Math.abs(txHover.t.usd))} · ≈ {vnd(Math.abs(txHover.t.vnd))}</span>
+                    {txHover.t.type === 'Mua' ? (
+                        <>
+                            <span className={(PRICE_NOW - txHover.t.price) * Math.abs(txHover.t.btc) >= 0 ? 'buytxt' : 'selltxt'}>
+                                Hiện tại: {usd((PRICE_NOW - txHover.t.price) * Math.abs(txHover.t.btc))}
+                            </span>
+                            <span>{pct((PRICE_NOW / txHover.t.price - 1) * 100)} so với giá mua</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>Chênh giá bán với hiện tại: {usd(txHover.t.price - PRICE_NOW, 0)}/BTC</span>
+                            <span>{pct((txHover.t.price / PRICE_NOW - 1) * 100)} · {usd(Math.abs(txHover.t.btc) * (txHover.t.price - PRICE_NOW))} trên lượng đã bán</span>
+                        </>
+                    )}
                 </div>
             )}
             <div className="legend">
@@ -187,7 +200,7 @@ export function App() {
             <div className="dark">
                 <div className="topbar">
                     <div className="brand"><span className="blogo">₿</span> BTC Portfolio</div>
-                    <div className="live"><span className="livedot" /> Cập nhật 20/09/2026</div>
+                    <div className="live"><span className="livedot" /> Giá cập nhật {dateVi(MARKET.updatedAt.slice(0, 10))}</div>
                 </div>
                 <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
                 <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua đều đặn và {SELLS} lần chốt một phần. Mỗi chấm trên biểu đồ là một lần mua hoặc bán thật, đặt đúng ngày và đúng giá.</p>
@@ -242,7 +255,7 @@ export function App() {
                 </div>
 
                 <footer className="closing">
-                    Giá BTC theo ngày từ Blockchain.com, chốt 20/09/2026. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.
+                    Giá BTC hiện tại và lịch sử từ CoinGecko, tự cập nhật qua GitHub Actions. Giao dịch từ Sheet BTC riêng tư, chỉ dữ liệu đã lọc được đưa lên trang public. Trang chỉ để xem, không mua bán gì ở đây.
                 </footer>
             </div>
         </main>
