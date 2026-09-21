@@ -277,7 +277,7 @@ export function App() {
             </div>
           </div>
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail">{SELLS} lần bán</div></div>
+            <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail"><span className={REALIZED >= 0 ? 'up' : 'down'}>{SELLS}</span> lần bán</div></div>
             <div className="change-money">
               <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
               <div className="change-vnd">≈ {vnd(REALIZED * VND_RATE)}</div>
