@@ -257,7 +257,27 @@ export function App() {
       <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
-    <div className="summaryGrid" aria-label="Tổng quan danh mục"><div className="hero-panel primary holdings-card"><div className="heroLabel">Số BTC đang nắm giữ</div><div className="heroValue">{btcFmt(HELD)} BTC</div><div className="heroUsd">{usd(VALUE_NOW)}</div><div className={`heroGain ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED, 0)} · {pct(UNREALIZED_PCT)}</div><div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div></div>
+    <div className="summaryGrid" aria-label="Tổng quan danh mục">
+      <div className="hero-panel primary holdings-card">
+        <div className="heroLabel">Số BTC đang nắm giữ</div>
+        <div className="heroValue">{btcFmt(HELD)} BTC</div>
+        <div className="heroUsd">{usd(VALUE_NOW)}</div>
+        <div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div>
+      </div>
+      <div className="change-card">
+        <div className="change-title">Tăng/giảm</div>
+        <div className="change-rows">
+          <div className="change-row">
+            <div className="change-copy"><div className="change-label">Hiện tại</div><div className="change-detail">{pct(UNREALIZED_PCT)} trên số BTC đang giữ</div></div>
+            <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
+          </div>
+          <div className="change-row">
+            <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail">{SELLS} lần bán</div></div>
+            <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
     <PriceChart rangeKey={rangeKey} />
