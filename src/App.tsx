@@ -200,14 +200,22 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
 interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number }
 
 function TransactionRow({ transaction }: { transaction: Tx }) {
-  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(Math.abs(transaction.usd))}</td><td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
+  const isBuy = transaction.type === 'Mua';
+  const purchaseValue = Math.abs(transaction.usd);
+  const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
+  const change = currentValue - purchaseValue;
+  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(purchaseValue)}</td>{isBuy ? <><td className="r">{usd(currentValue)}</td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}>{change >= 0 ? '▲' : '▼'} {usd(change)}</td></> : <><td className="r tx-empty">—</td><td className="r tx-empty">—</td></>}<td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
 }
 
 function TransactionCard({ transaction }: { transaction: Tx }) {
+  const isBuy = transaction.type === 'Mua';
+  const purchaseValue = Math.abs(transaction.usd);
+  const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
+  const change = currentValue - purchaseValue;
   return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
     <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
     <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
-    <div className="tx-card-money"><span>{usd(Math.abs(transaction.usd))}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>
+    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? 'Tăng' : 'Sụt'} {usd(change)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
   </article>;
 }
 
@@ -240,7 +248,7 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
         <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
         <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` · Bán ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
       </summary>
-      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">USD</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
       <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
     </details>
   ))}</div>;
@@ -267,7 +275,7 @@ export function App() {
         <div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div>
       </div>
       <div className="change-card">
-        <div className="change-head"><div className="change-title">Giá trị số BTC đang nắm giữ</div><div className="change-average">Trung bình giá ở: {usd0(AVG_COST)}</div></div>
+        <div className="change-head"><div className="change-title">Giá trị số BTC đang nắm giữ</div><div className="change-average">Trung bình giá ở: <span className="change-average-value">{usd0(AVG_COST)}</span></div></div>
         <div className="change-rows">
           <div className="change-row">
             <div className="change-copy"><div className="change-label">Thời điểm hiện tại</div><div className="change-detail"><span className={up ? 'up' : 'down'}>{up ? 'Tăng' : 'Giảm'} {pct(UNREALIZED_PCT)}</span> so với tổng giá trị lúc mua</div></div>
@@ -290,7 +298,7 @@ export function App() {
     <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
     <PriceChart rangeKey={rangeKey} />
 
-    <div className="history-head"><div><h2>Lịch sử giao dịch</h2><p>{rangeKey === 'all' ? 'Tất cả các năm' : `Năm ${rangeKey}`} · nhóm theo tháng</p></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
+    <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} />
 
     <p className="closing">Giá BTC hiện tại từ {MARKET.source}, cập nhật {DATA_DATE}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
