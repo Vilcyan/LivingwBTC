@@ -1,0 +1,59 @@
+name: Refresh portfolio data
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      refresh_transactions:
+        description: Refresh transactions from the private Sheet feed
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-portfolio-data
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Decide whether today's transaction refresh is due
+        id: cadence
+        shell: bash
+        run: |
+          hour=$(TZ=Asia/Ho_Chi_Minh date +%H)
+          minute=$(TZ=Asia/Ho_Chi_Minh date +%M)
+          manual='${{ inputs.refresh_transactions }}'
+          if [[ "$manual" == "true" || ( "$hour" == "06" && 10#$minute -lt 30 ) ]]; then
+            echo 'refresh_transactions=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'refresh_transactions=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Fetch market and transaction data with last-known-good fallback
+        env:
+          REFRESH_TRANSACTIONS: ${{ steps.cadence.outputs.refresh_transactions }}
+          TX_FEED_URL: ${{ secrets.TX_FEED_URL }}
+        run: node scripts/fetch-data.mjs
+      - name: Build check
+        run: npm ci && npm run build
+      - name: Commit refreshed public snapshot
+        shell: bash
+        run: |
+          if git diff --quiet -- src/data.ts; then
+            echo 'No data change.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data.ts
+          git commit -m 'Refresh portfolio data'
+          git push
