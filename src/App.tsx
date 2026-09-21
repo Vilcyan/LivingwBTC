@@ -139,7 +139,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
     setSelectedTx((current) => current?.t === transaction ? null : { t: transaction, x: cx, y: cy });
   };
   const last = points[points.length - 1];
-  const avgLabelWidth = width < 420 ? 126 : 148;
+  const avgLabelWidth = 122;
   const avgLabelX = width - margin.r - avgLabelWidth;
   const avgLabelY = Math.max(y(AVG_COST) - 23, 3);
 
