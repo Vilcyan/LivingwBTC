@@ -54,18 +54,19 @@
 /* Desktop-only price composition: bigger label in the left third, bigger price and VND below it in the right two-thirds; average cost stays mobile-only. */
 @media(min-width:768px){
   .price-panel{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
-    grid-template-areas:"label main change";
+    grid-template-columns:minmax(0,1fr) minmax(0,2fr);
+    grid-template-areas:"label main";
     align-items:stretch;
     column-gap:0;
     min-height:132px;
   }
-  .price-panel .heroLabel{grid-area:label;align-self:center;padding-right:28px;font-size:18px;letter-spacing:.07em}
-  .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:32px;border-left:1px solid #26344e}
+  .price-panel .heroLabel{grid-area:label;align-self:center;justify-self:center;padding:0 28px;text-align:center;font-size:18px;letter-spacing:.07em}
+  .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:0 32px;border-left:1px solid #26344e}
+  .price-usd-row{display:flex;align-items:baseline;gap:18px}
   .price-main .heroValue{font-size:56px}
   .price-main .heroVnd{margin:0;text-align:left;font-size:15px}
-  .price-24h{grid-area:change;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:32px;border-left:1px solid #26344e}
-  .price-24h .h24-label{color:#8b94a7;font-size:12px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.085em}
-  .price-24h .h24-value{font-size:30px;font-weight:700;line-height:1.15;letter-spacing:-.02em;white-space:nowrap}
+  .price-24h{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+  .price-24h .h24-label{color:#8b94a7;font-size:11px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.07em}
+  .price-24h .h24-value{font-size:18px;font-weight:700;line-height:1.15;letter-spacing:-.01em}
   .price-panel .heroSub{display:none}
 }
