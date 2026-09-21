@@ -10,6 +10,7 @@ const parse = (re, name) => {
 
 let market = parse(/export const MARKET = (\{.*?\});/s, 'market');
 let prices = parse(/export const PRICES: \[number, number\]\[\] = (\[.*?\]);\n\nexport interface/s, 'prices');
+const VND_RATE = 26022;
 let txs = parse(/export const TXS: Tx\[\] = (\[.*\]);/s, 'transactions');
 
 async function json(url) {
@@ -63,7 +64,9 @@ if (process.env.REFRESH_TRANSACTIONS === 'true') {
       const ts = Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000);
       const btc = Number(t.btc), price = Number(t.price);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(btc) || !Number.isFinite(price) || !['Mua', 'Bán'].includes(t.type)) throw new Error('Invalid transaction row');
-      return { date, ts, type: t.type, btc, price, usd: Number(t.usd) || Math.abs(btc * price), vnd: Number(t.vnd) || 0 };
+      const usd = Number(t.usd) || Math.abs(btc * price);
+      // The feed only records VND for sells; buys fall back to the site's flat rate (26022), matching earlier snapshots.
+      return { date, ts, type: t.type, btc, price, usd, vnd: Number(t.vnd) || Math.round(usd * VND_RATE) };
     });
     console.log(`Transactions refreshed: ${txs.length}`);
   } catch (error) {
