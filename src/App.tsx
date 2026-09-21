@@ -270,7 +270,7 @@ export function App() {
         <div className="change-head"><div className="change-title">Giá trị số BTC đang nắm giữ</div><div className="change-average">Trung bình giá ở: {usd0(AVG_COST)}</div></div>
         <div className="change-rows">
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">Thời điểm hiện tại</div><div className="change-detail"><span className={up ? 'up' : 'down'}>{pct(UNREALIZED_PCT)}</span> trên số BTC đang giữ</div></div>
+            <div className="change-copy"><div className="change-label">Thời điểm hiện tại</div><div className="change-detail"><span className={up ? 'up' : 'down'}>{up ? 'Tăng' : 'Giảm'} {pct(UNREALIZED_PCT)}</span> so với tổng giá trị lúc mua</div></div>
             <div className="change-money">
               <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
               <div className="change-vnd">≈ {vnd(UNREALIZED * VND_RATE)}</div>
