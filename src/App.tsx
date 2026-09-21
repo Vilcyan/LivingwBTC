@@ -27,6 +27,20 @@ const pct = (value: number) => `${value > 0 ? '+' : ''}${value.toLocaleString('v
 const dateVi = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const tsDateVi = (ts: number) => dateVi(new Date(ts * 1000).toISOString().slice(0, 10));
 
+// Rolls each digit of a freshly rendered value up to its final number, odometer-style, on first mount.
+function RollingPrice({ text }: { text: string }) {
+  const [rolled, setRolled] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => requestAnimationFrame(() => setRolled(true)));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  return <span className="rolling" aria-label={text}><span aria-hidden="true" className="rolling-inner">{text.split('').map((ch, index) => {
+    if (!/\d/.test(ch)) return <span key={index} className="roll-static">{ch}</span>;
+    const digit = Number(ch);
+    return <span key={index} className="roll"><span className="roll-strip" style={{ transform: rolled ? `translateY(${-(10 + digit)}em)` : 'translateY(0)', transitionDelay: rolled ? `${index * 90}ms` : '0ms' }}>{Array.from({ length: 20 }, (_, k) => <span key={k} className="roll-digit">{k % 10}</span>)}</span></span>;
+  })}</span></span>;
+}
+
 interface TxOutcome { total: number; pnl: number; pnlPct: number; totalLabel: string; realized: boolean }
 
 // Realized results are copied from the source sheet's transaction-basis columns.
@@ -266,7 +280,7 @@ export function App() {
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
-      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice text={usd0(PRICE_NOW)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
     <div className="summaryGrid" aria-label="Tổng quan danh mục">
