@@ -155,7 +155,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
           {xTicks.map((tick) => <text key={tick.ts} x={x(tick.ts)} y={height - 8} className="tick" textAnchor="middle">{tick.label}</text>)}
           <line x1={margin.l} x2={width - margin.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
           <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height="20" rx="5" className="avglabel-bg" />
-          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Giá vốn TB {usd0(AVG_COST)}</text>
+          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bình giá {usd0(AVG_COST)}</text>
           <path d={path} className="priceline" />
           <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
             onMouseMove={(event) => pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement)}
@@ -191,7 +191,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
           <span className={`ttpnl ${tone}`}>{changeLabel}: <b>{usd(outcome.pnl)} ({pct(outcome.pnlPct)})</b></span>
         </div>;
       })()}
-      <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Giá vốn TB</span></div>
+      <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Trung bình giá</span></div>
     </div>
   );
 }
@@ -255,7 +255,7 @@ export function App() {
 
     <section className="hero-grid" aria-label="Tổng quan danh mục và giá Bitcoin">
       <div className="hero-panel primary"><div className="heroLabel">Giá trị danh mục</div><div className="heroValue">{usd(VALUE_NOW)}</div><div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div><div className="heroSub"><span>{btcFmt(HELD)} BTC</span><span className={up ? 'up' : 'down'}>{up ? '▲' : '▼'} {pct(UNREALIZED_PCT)} ({usd(UNREALIZED, 0)})</span></div></div>
-      <div className="hero-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Giá vốn TB {usd0(AVG_COST)}</span></div></div>
+      <div className="hero-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
     <div className="statGrid"><div className="stat"><div className="sLabel">BTC đang giữ</div><div className="sValue">{btcFmt(HELD)} BTC</div></div><div className="stat"><div className="sLabel">Giá vốn đang giữ</div><div className="sValue">{usd(COST_BASIS)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div></div>
