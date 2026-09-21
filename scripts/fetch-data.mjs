@@ -19,11 +19,13 @@ async function json(url) {
 }
 
 try {
-  const simple = await json('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_last_updated_at=true');
+  const simple = await json('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true');
   const currentPrice = Number(simple?.bitcoin?.usd);
   if (!Number.isFinite(currentPrice) || currentPrice <= 0) throw new Error('Invalid CoinGecko current price');
+  const change24h = Number(simple?.bitcoin?.usd_24h_change);
   market = {
     currentPrice,
+    change24h: Number.isFinite(change24h) ? change24h : market.change24h,
     updatedAt: new Date((simple.bitcoin.last_updated_at || Date.now() / 1000) * 1000).toISOString(),
     source: 'CoinGecko'
   };
