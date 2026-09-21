@@ -149,7 +149,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
                             <circle key={t.ts + t.type} cx={cx} cy={cy} r={t.type === 'Mua' ? 7 : 7.5}
                                 className={`${t.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
                                 onMouseEnter={() => { setHover(null); setTxHover({ t, x: cx, y: cy }); }}
-                                onMouseLeave={() => setTxHover(null)}
+                                onMouseLeave={() => { if (!window.matchMedia('(pointer: coarse)').matches) setTxHover(null); }}
                                 onClick={(e) => { e.stopPropagation(); setTxHover((prev) => (prev && prev.t === t ? null : { t, x: cx, y: cy })); }} />
                         );
                     })}
