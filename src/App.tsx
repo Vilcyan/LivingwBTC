@@ -186,7 +186,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
         return <div className="txtooltip" style={{ left: Math.min(Math.max(selectedTx.x, 132), width - 132), top: Math.max(selectedTx.y + 6, 122) }}>
           <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} · {dateVi(selectedTx.t.date)}</strong>
           <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {usd0(selectedTx.t.price)}</span>
-          <span className="ttval">Vốn giao dịch: {usd(Math.abs(selectedTx.t.usd))}</span>
+          <span className="ttval">{selectedTx.t.type === 'Mua' ? 'Giá trị lúc mua' : 'Vốn giao dịch'}: {usd(Math.abs(selectedTx.t.usd))}</span>
           <span className="tttotal">{outcome.totalLabel}: <b>{usd(outcome.total)}</b></span>
           <span className={`ttpnl ${tone}`}>{changeLabel}: <b>{usd(outcome.pnl)} ({pct(outcome.pnlPct)})</b></span>
         </div>;
