@@ -253,12 +253,11 @@ export function App() {
     <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
-    <section className="hero-grid" aria-label="Tổng quan danh mục và giá Bitcoin">
-      <div className="hero-panel primary"><div className="heroLabel">Số BTC đang nắm giữ</div><div className="heroValue">{btcFmt(HELD)} BTC</div><div className="heroUsd">{usd(VALUE_NOW)}</div><div className={`heroGain ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED, 0)} · {pct(UNREALIZED_PCT)}</div><div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div></div>
-      <div className="hero-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
+    <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
-    <div className="statGrid"><div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div></div>
+    <div className="summaryGrid" aria-label="Tổng quan danh mục"><div className="hero-panel primary holdings-card"><div className="heroLabel">Số BTC đang nắm giữ</div><div className="heroValue">{btcFmt(HELD)} BTC</div><div className="heroUsd">{usd(VALUE_NOW)}</div><div className={`heroGain ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED, 0)} · {pct(UNREALIZED_PCT)}</div><div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div></div>
 
     <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
     <PriceChart rangeKey={rangeKey} />
