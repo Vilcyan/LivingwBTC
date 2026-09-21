@@ -24,6 +24,7 @@
 .holdings-card .heroValue{font-size:30px;color:#f7931a}
 .holdings-card .heroUsd{font-size:28px}
 .holdings-card .heroVnd{font-size:19px}
+.holdings-card .fiatLabel{margin:4px 0 -4px}
 .price-24h{display:none}
 .change-card{padding:20px;background:#131c2e;border:1px solid #26344e}
 .change-title{color:#fff;font-size:17px;font-weight:700;line-height:1.25;margin-bottom:4px}
