@@ -150,7 +150,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
                                 className={`${t.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
                                 onMouseEnter={() => { setHover(null); setTxHover({ t, x: cx, y: cy }); }}
                                 onMouseLeave={() => { if (!window.matchMedia('(pointer: coarse)').matches) setTxHover(null); }}
-                                onClick={(e) => { e.stopPropagation(); setTxHover((prev) => (prev && prev.t === t ? null : { t, x: cx, y: cy })); }} />
+                                onClick={(e) => { e.stopPropagation(); const next = { t, x: cx, y: cy }; setTxHover((prev) => window.matchMedia('(pointer: coarse)').matches ? next : (prev && prev.t === t ? null : next)); }} />
                         );
                     })}
                     <circle cx={x(last[0])} cy={y(last[1])} r={4.5} className="dot-now" />
