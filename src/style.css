@@ -27,7 +27,7 @@
 .holdings-card .fiatLabel{margin:4px 0 -4px}
 .price-24h{display:none}
 .change-card{padding:20px;background:#131c2e;border:1px solid #26344e}
-.change-title{color:#8b94a7;font-size:12px;font-weight:700;line-height:1.25;margin-bottom:4px}
+.change-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:4px}.change-title{color:#8b94a7;font-size:12px;font-weight:700;line-height:1.25}.change-average{color:#8b94a7;font-size:12px;font-weight:600;line-height:1.25;text-align:right;white-space:nowrap}
 .change-rows{display:flex;flex-direction:column}
 .change-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:15px 0}
 .change-row+.change-row{border-top:1px solid #2a354a}
