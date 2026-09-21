@@ -267,15 +267,21 @@ export function App() {
         <div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div>
       </div>
       <div className="change-card">
-        <div className="change-title">Tăng/giảm</div>
+        <div className="change-title">Giá trị số BTC đang nắm giữ</div>
         <div className="change-rows">
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">Hiện tại</div><div className="change-detail">{pct(UNREALIZED_PCT)} trên số BTC đang giữ</div></div>
-            <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
+            <div className="change-copy"><div className="change-label">Thời điểm hiện tại</div><div className="change-detail"><span className={up ? 'up' : 'down'}>{pct(UNREALIZED_PCT)}</span> trên số BTC đang giữ</div></div>
+            <div className="change-money">
+              <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
+              <div className="change-vnd">≈ {vnd(UNREALIZED * VND_RATE)}</div>
+            </div>
           </div>
           <div className="change-row">
             <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail">{SELLS} lần bán</div></div>
-            <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
+            <div className="change-money">
+              <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
+              <div className="change-vnd">≈ {vnd(REALIZED * VND_RATE)}</div>
+            </div>
           </div>
         </div>
       </div>
