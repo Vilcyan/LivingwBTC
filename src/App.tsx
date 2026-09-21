@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './style.css';
 import { PRICES, TXS, MARKET, type Tx } from './data';
 
-// Snapshot constants from the user's "My life tá»i giáº£n" sheet, tab "BTC (máº«u má»i)", 20/09/2026.
+// Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 20/09/2026.
 const AVG_COST = 95380;
 const COST_BASIS = 6016.59;
 const REALIZED = -100.64;
@@ -21,7 +21,7 @@ const SELLS = TXS.length - BUYS;
 const usd = (value: number, digits = 2) =>
   `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const usd0 = (value: number) => `$${Math.round(value).toLocaleString('en-US')}`;
-const vnd = (value: number) => `${Math.round(value).toLocaleString('vi-VN')} â«`;
+const vnd = (value: number) => `${Math.round(value).toLocaleString('vi-VN')} ₫`;
 const btcFmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
 const pct = (value: number) => `${value > 0 ? '+' : ''}${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
 const dateVi = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
@@ -43,20 +43,20 @@ const txOutcome = (transaction: Tx): TxOutcome => {
     const principal = Math.abs(transaction.usd);
     const total = Math.abs(transaction.btc) * PRICE_NOW;
     const pnl = total - principal;
-    return { total, pnl, pnlPct: principal ? (pnl / principal) * 100 : 0, totalLabel: 'GiÃ¡ trá» hiá»n táº¡i', realized: false };
+    return { total, pnl, pnlPct: principal ? (pnl / principal) * 100 : 0, totalLabel: 'Giá trị hiện tại', realized: false };
   }
   const realized = REALIZED_BY_DATE[transaction.date];
   return {
     total: Math.abs(transaction.usd),
     pnl: realized?.pnl ?? 0,
     pnlPct: realized?.pnlPct ?? 0,
-    totalLabel: 'Tá»ng ÄÃ£ thu',
+    totalLabel: 'Tổng đã thu',
     realized: true,
   };
 };
 
 const RANGES: { key: string; label: string; from?: number }[] = [
-  { key: 'all', label: 'Táº¥t cáº£' },
+  { key: 'all', label: 'Tất cả' },
   ...[2022, 2023, 2024, 2025, 2026].map((year) => ({ key: String(year), label: String(year), from: Date.UTC(year, 0, 1) / 1000 })),
 ];
 
@@ -146,7 +146,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
   return (
     <div className="chart-wrap" ref={wrapRef}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={`Biá»u Äá» giÃ¡ Bitcoin, ${range.label}`}>
+        <svg width={width} height={height} role="img" aria-label={`Biểu đồ giá Bitcoin, ${range.label}`}>
           {yTicks.map((value) => (
             <g key={value}>
               <line x1={margin.l} x2={width - margin.r} y1={y(value)} y2={y(value)} className="grid" />
@@ -156,7 +156,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
           {xTicks.map((tick) => <text key={tick.ts} x={x(tick.ts)} y={height - 8} className="tick" textAnchor="middle">{tick.label}</text>)}
           <line x1={margin.l} x2={width - margin.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
           <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height="20" rx="5" className="avglabel-bg" />
-          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bÃ¬nh giÃ¡ {usd0(AVG_COST)}</text>
+          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bình giá {usd0(AVG_COST)}</text>
           <path d={path} className="priceline" />
           <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
             onMouseMove={(event) => pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement)}
@@ -167,7 +167,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
             const cx = x(transaction.ts);
             const cy = y(transaction.price);
             const active = selectedTx?.t === transaction;
-            const label = `${transaction.type} ${btcFmt(Math.abs(transaction.btc))} BTC ngÃ y ${dateVi(transaction.date)}, giÃ¡ ${usd0(transaction.price)}`;
+            const label = `${transaction.type} ${btcFmt(Math.abs(transaction.btc))} BTC ngày ${dateVi(transaction.date)}, giá ${usd0(transaction.price)}`;
             return <circle key={`${transaction.ts}-${transaction.type}-${index}`} cx={cx} cy={cy} r={width < 640 ? 5.5 : 7}
               className={`${transaction.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
               role="button" tabIndex={0} aria-label={label}
@@ -183,16 +183,16 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
       {selectedTx && (() => {
         const outcome = txOutcome(selectedTx.t);
         const tone = outcome.pnl >= 0 ? 'gain' : 'loss';
-        const changeLabel = `${outcome.pnl >= 0 ? 'TÄng' : 'Sá»¥t'}${outcome.realized ? ' ÄÃ£ chá»t' : ''}`;
+        const changeLabel = `${outcome.pnl >= 0 ? 'Tăng' : 'Sụt'}${outcome.realized ? ' đã chốt' : ''}`;
         return <div className="txtooltip" style={{ left: Math.min(Math.max(selectedTx.x, 132), width - 132), top: Math.max(selectedTx.y + 6, 122) }}>
-          <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} Â· {dateVi(selectedTx.t.date)}</strong>
+          <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} · {dateVi(selectedTx.t.date)}</strong>
           <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {usd0(selectedTx.t.price)}</span>
-          <span className="ttval">{selectedTx.t.type === 'Mua' ? 'GiÃ¡ trá» lÃºc mua' : 'Vá»n giao dá»ch'}: {usd(Math.abs(selectedTx.t.usd))}</span>
+          <span className="ttval">{selectedTx.t.type === 'Mua' ? 'Giá trị lúc mua' : 'Vốn giao dịch'}: {usd(Math.abs(selectedTx.t.usd))}</span>
           <span className="tttotal">{outcome.totalLabel}: <b>{usd(outcome.total)}</b></span>
           <span className={`ttpnl ${tone}`}>{changeLabel}: <b>{usd(outcome.pnl)} ({pct(outcome.pnlPct)})</b></span>
         </div>;
       })()}
-      <div className="legend"><span><i className="lg-line" /> GiÃ¡ BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> BÃ¡n ({SELLS})</span><span><i className="lg-avg" /> Trung bÃ¬nh giÃ¡</span></div>
+      <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Trung bình giá</span></div>
     </div>
   );
 }
@@ -200,14 +200,14 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
 interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number }
 
 function TransactionRow({ transaction }: { transaction: Tx }) {
-  return <tr className={transaction.type === 'BÃ¡n' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(Math.abs(transaction.usd))}</td><td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
+  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(Math.abs(transaction.usd))}</td><td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
 }
 
 function TransactionCard({ transaction }: { transaction: Tx }) {
-  return <article className={`tx-card ${transaction.type === 'BÃ¡n' ? 'sell' : ''}`}>
+  return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
     <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
     <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
-    <div className="tx-card-money"><span>{usd(Math.abs(transaction.usd))}</span><span>â {vnd(Math.abs(transaction.vnd))}</span></div>
+    <div className="tx-card-money"><span>{usd(Math.abs(transaction.usd))}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>
   </article>;
 }
 
@@ -223,12 +223,12 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
       const [year, month] = key.split('-');
       return {
         key,
-        label: `ThÃ¡ng ${Number(month)}/${year}`,
+        label: `Tháng ${Number(month)}/${year}`,
         transactions,
         buys: transactions.filter((tx) => tx.type === 'Mua').length,
-        sells: transactions.filter((tx) => tx.type === 'BÃ¡n').length,
+        sells: transactions.filter((tx) => tx.type === 'Bán').length,
         btcBought: transactions.filter((tx) => tx.type === 'Mua').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
-        btcSold: transactions.filter((tx) => tx.type === 'BÃ¡n').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
+        btcSold: transactions.filter((tx) => tx.type === 'Bán').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
         usdTotal: transactions.reduce((sum, tx) => sum + Math.abs(tx.usd), 0),
       };
     });
@@ -237,10 +237,10 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
   return <div className="months" key={rangeKey}>{groups.map((group) => (
     <details className="month" key={group.key} open={group.key === '2026-09'}>
       <summary>
-        <div><strong>{group.label}</strong><span>{group.transactions.length} giao dá»ch Â· {group.buys} mua{group.sells ? ` Â· ${group.sells} bÃ¡n` : ''}</span></div>
-        <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` Â· BÃ¡n ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
+        <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
+        <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` · Bán ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
       </summary>
-      <div className="tableWrap desktop-table"><table><thead><tr><th>NgÃ y</th><th>Loáº¡i</th><th className="r">Sá» BTC</th><th className="r">GiÃ¡ BTC</th><th className="r">USD</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">USD</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
       <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
     </details>
   ))}</div>;
@@ -250,43 +250,43 @@ export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const up = UNREALIZED >= 0;
   return <main className="page-shell"><div className="dark">
-    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dá»¯ liá»u chá»t cuá»i ngÃ y {DATA_DATE} (GMT+7)</div></div>
-    <h1 className="title">Danh má»¥c Äáº§u tÆ° BTC cá»§a Mike</h1>
-    <p className="intro">HÃ nh trÃ¬nh DCA Bitcoin tá»« thÃ¡ng 1/2022: {TXS.length} giao dá»ch, {BUYS} láº§n mua vÃ  {SELLS} láº§n bÃ¡n. Má»i cháº¥m trÃªn biá»u Äá» lÃ  má»t giao dá»ch tháº­t, Äáº·t ÄÃºng ngÃ y vÃ  giÃ¡.</p>
+    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div>
+    <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
+    <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
-    <section className="hero-grid" aria-label="GiÃ¡ Bitcoin hiá»n táº¡i">
-      <div className="hero-panel price-panel"><div className="heroLabel">GiÃ¡ 1 BTC hiá»n táº¡i</div><div className="price-main"><div className="price-usd-row"><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? 'â²' : 'â¼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">â {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bÃ¬nh giÃ¡ {usd0(AVG_COST)}</span></div></div>
+    <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
-    <div className="summaryGrid" aria-label="Tá»ng quan danh má»¥c">
+    <div className="summaryGrid" aria-label="Tổng quan danh mục">
       <div className="hero-panel primary holdings-card">
-        <div className="heroLabel">Sá» BTC Äang náº¯m giá»¯</div>
+        <div className="heroLabel">Số BTC đang nắm giữ</div>
         <div className="heroValue">{btcFmt(HELD)} BTC</div>
-        <div className="heroLabel fiatLabel">So vá»i fiat</div>
+        <div className="heroLabel fiatLabel">So với fiat</div>
         <div className="heroUsd">{usd(VALUE_NOW)}</div>
-        <div className="heroVnd">â {vnd(VALUE_NOW * VND_RATE)}</div>
+        <div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div>
       </div>
       <div className="change-card">
-        <div className="change-title">TÄng/giáº£m</div>
+        <div className="change-title">Tăng/giảm</div>
         <div className="change-rows">
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">Hiá»n táº¡i</div><div className="change-detail">{pct(UNREALIZED_PCT)} trÃªn sá» BTC Äang giá»¯</div></div>
-            <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? 'â²' : 'â¼'} {usd(UNREALIZED)}</div>
+            <div className="change-copy"><div className="change-label">Hiện tại</div><div className="change-detail">{pct(UNREALIZED_PCT)} trên số BTC đang giữ</div></div>
+            <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
           </div>
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">ÄÃ£ ghi nháº­n</div><div className="change-detail">{SELLS} láº§n bÃ¡n</div></div>
-            <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? 'â²' : 'â¼'} {usd(REALIZED)}</div>
+            <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail">{SELLS} lần bán</div></div>
+            <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div className="sectionHead"><h2>GiÃ¡ BTC vÃ  cÃ¡c láº§n DCA</h2><div className="range-scroll" aria-label="Lá»c theo nÄm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
+    <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
     <PriceChart rangeKey={rangeKey} />
 
-    <div className="history-head"><div><h2>Lá»ch sá»­ giao dá»ch</h2><p>{rangeKey === 'all' ? 'Táº¥t cáº£ cÃ¡c nÄm' : `NÄm ${rangeKey}`} Â· nhÃ³m theo thÃ¡ng</p></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dá»ch</span></div>
+    <div className="history-head"><div><h2>Lịch sử giao dịch</h2><p>{rangeKey === 'all' ? 'Tất cả các năm' : `Năm ${rangeKey}`} · nhóm theo tháng</p></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} />
 
-    <p className="closing">GiÃ¡ BTC hiá»n táº¡i tá»« {MARKET.source}, cáº­p nháº­t {DATA_DATE}. Giao dá»ch vÃ  giÃ¡ vá»n tá»« sheet "My life tá»i giáº£n" cá»§a Mike. Trang chá» Äá» xem, khÃ´ng mua bÃ¡n gÃ¬ á» ÄÃ¢y.</p>
+    <p className="closing">Giá BTC hiện tại từ {MARKET.source}, cập nhật {DATA_DATE}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
 }
