@@ -62,7 +62,7 @@
     padding:22px 0;
   }
   .price-panel .heroLabel{grid-area:label;align-self:center;justify-self:stretch;padding:0 28px;text-align:center;font-size:18px;letter-spacing:.07em}
-  .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;justify-self:center;width:max-content;gap:6px;padding:0 32px;border-left:1px solid #26344e}
+  .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;justify-self:stretch;gap:6px;padding-left:max(32px,calc((100% - 345.9px)/2));border-left:1px solid #26344e}
   .price-usd-row{display:flex;align-items:center;gap:18px}
   .price-main .heroValue{font-size:56px}
   .price-main .heroVnd{margin:0;text-align:left;font-size:15px}
