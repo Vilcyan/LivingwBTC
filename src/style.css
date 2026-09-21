@@ -35,6 +35,8 @@
 .change-label{color:#e8edf5;font-size:14px;font-weight:700;line-height:1.35}
 .change-detail{color:#8f99ab;font-size:13px;line-height:1.4;margin-top:3px}
 .change-value{font-size:24px;font-weight:700;line-height:1.15;letter-spacing:-.025em;white-space:nowrap;text-align:right}
+.change-money{text-align:right}
+.change-vnd{color:#b6bfce;font-size:13px;line-height:1.35;margin-top:2px;white-space:nowrap}
 .up{color:#16c784!important}.down{color:#ea3943!important}
 @media(min-width:768px){
   .hero-panel{padding:22px 24px}
