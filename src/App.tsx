@@ -10,11 +10,11 @@ const VND_RATE = 26022;
 const DATA_DATE = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(MARKET.updatedAt));
 
 const HELD = TXS.reduce((sum, tx) => sum + tx.btc, 0);
-const PRICE_NOW = MARKET.currentPrice;
-const CHANGE_24H = MARKET.change24h;
-const VALUE_NOW = HELD * PRICE_NOW;
-const UNREALIZED = VALUE_NOW - COST_BASIS;
-const UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
+let PRICE_NOW = MARKET.currentPrice;
+let CHANGE_24H = MARKET.change24h;
+let VALUE_NOW = HELD * PRICE_NOW;
+let UNREALIZED = VALUE_NOW - COST_BASIS;
+let UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
 const BUYS = TXS.filter((tx) => tx.type === 'Mua').length;
 const SELLS = TXS.length - BUYS;
 
@@ -234,7 +234,7 @@ function TransactionCard({ transaction }: { transaction: Tx }) {
   </article>;
 }
 
-function TransactionHistory({ rangeKey }: { rangeKey: string }) {
+function TransactionHistory({ rangeKey, priceTick }: { rangeKey: string; priceTick: number }) {
   const groups = useMemo<MonthGroup[]>(() => {
     const filtered = rangeKey === 'all' ? TXS : TXS.filter((tx) => tx.date.startsWith(rangeKey));
     const map = new Map<string, Tx[]>();
@@ -257,7 +257,7 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
         buyChange: transactions.filter((tx) => tx.type === 'Mua').reduce((sum, tx) => sum + Math.abs(tx.btc) * PRICE_NOW - Math.abs(tx.usd), 0),
       };
     });
-  }, [rangeKey]);
+  }, [rangeKey, priceTick]);
 
   return <div className="months" key={rangeKey}>{groups.map((group) => (
     <details className="month" key={group.key} open={group.key === '2026-09'}>
@@ -273,6 +273,30 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
 
 export function App() {
   const [rangeKey, setRangeKey] = useState('all');
+  const [priceTick, setPriceTick] = useState(0);
+  // Rebase every price-derived number on a live CoinGecko read, then poll once a minute while the page stays open; on any failure keep the last good price (initially the data.ts snapshot).
+  useEffect(() => {
+    let cancelled = false;
+    const pull = () => {
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true')
+        .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+        .then((data) => {
+          const price = data?.bitcoin?.usd;
+          const change = data?.bitcoin?.usd_24h_change;
+          if (cancelled || typeof price !== 'number' || !(price > 0)) return;
+          PRICE_NOW = price;
+          VALUE_NOW = HELD * PRICE_NOW;
+          UNREALIZED = VALUE_NOW - COST_BASIS;
+          UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
+          if (typeof change === 'number' && Number.isFinite(change)) CHANGE_24H = change;
+          setPriceTick((tick) => tick + 1);
+        })
+        .catch(() => {});
+    };
+    pull();
+    const timer = setInterval(pull, 60000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
   const up = UNREALIZED >= 0;
   return <main className="page-shell"><div className="dark">
     <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div>
@@ -316,8 +340,8 @@ export function App() {
     <PriceChart rangeKey={rangeKey} />
 
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
-    <TransactionHistory rangeKey={rangeKey} />
+    <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} />
 
-    <p className="closing">Giá BTC hiện tại từ {MARKET.source}, cập nhật {DATA_DATE}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
+    <p className="closing">Giá BTC hiện tại từ {MARKET.source}, {priceTick ? 'cập nhật trực tiếp mỗi phút' : `cập nhật ${DATA_DATE}`}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
 }
