@@ -14,6 +14,7 @@
 .heroVnd{color:#b6bfce;font-size:13.5px;line-height:1.4}
 .heroSub{display:flex;flex-wrap:wrap;gap:6px 16px;color:#c6cdd9;font-size:13.5px;font-weight:600;line-height:1.4}
 .price-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label label" "value vnd" "sub sub";align-items:end;gap:7px 24px}
+.price-main{display:contents}
 .price-panel .heroLabel{grid-area:label}
 .price-panel .heroValue{grid-area:value}
 .price-panel .heroVnd{grid-area:vnd;margin:0 0 3px;text-align:right}
@@ -50,18 +51,18 @@
 @media(max-width:639px){.dark{padding:24px 16px 18px;border-radius:16px}.topbar{align-items:flex-start;flex-direction:column;gap:8px}.live{text-align:left}.heroValue{font-size:34px}.hero-panel{padding:18px 16px}.summaryGrid{grid-template-columns:1fr}.sectionHead{align-items:stretch;flex-direction:column;gap:9px}.range-scroll{margin-right:-16px;padding-right:16px}.chart-wrap{margin-inline:-4px}.legend{gap:7px 13px}.month summary{grid-template-columns:1fr;gap:6px;padding:14px 12px}.month-total{text-align:left;padding-left:22px}.desktop-table{display:none}.mobile-cards{display:grid;gap:8px;padding:10px;border-top:1px solid #1e2a40}.tx-card{background:#131c2e;border:1px solid #1e2a40;border-radius:11px;padding:12px}.tx-card-head,.tx-card-main,.tx-card-money{display:flex;justify-content:space-between;gap:12px}.tx-card-head strong{color:#f7931a}.tx-card-head time{color:#8b94a7;font-size:12.5px}.tx-card-main{color:#fff;font-weight:700;margin-top:7px}.tx-card-main span:last-child{color:#b5becc;font-weight:500}.tx-card-money{color:#9ba6b7;font-size:12.5px;margin-top:3px}.tx-card.sell .tx-card-head strong{color:#ea3943}.history-head{align-items:flex-start}.history-head>span{padding-top:3px}}
 @media(max-width:360px){.heroValue{font-size:30px}.tx-card-main{font-size:13.5px}.history-head{flex-direction:column;gap:2px}}
 
-/* Desktop-only price composition: keep the card full-width, but use its width with intent. */
+/* Desktop-only price composition: bigger label in the left third, bigger price and VND below it in the right two-thirds; average cost stays mobile-only. */
 @media(min-width:768px){
   .price-panel{
-    grid-template-columns:minmax(170px,.72fr) minmax(270px,1.2fr) minmax(190px,.8fr);
-    grid-template-areas:"label value vnd" "sub value vnd";
-    align-items:center;
+    grid-template-columns:minmax(0,1fr) minmax(0,2fr);
+    grid-template-areas:"label main";
+    align-items:stretch;
     column-gap:0;
-    row-gap:5px;
     min-height:132px;
   }
-  .price-panel .heroLabel{align-self:end;padding-right:24px}
-  .price-panel .heroSub{align-self:start;margin:0;padding:0 24px 0 0;border:0;font-weight:500}
-  .price-panel .heroValue{display:flex;align-items:center;align-self:stretch;padding:0 30px;border-left:1px solid #26344e;border-right:1px solid #26344e;font-size:44px}
-  .price-panel .heroVnd{align-self:center;margin:0;padding-left:30px;text-align:left;font-size:15px}
+  .price-panel .heroLabel{grid-area:label;align-self:center;padding-right:28px;font-size:18px;letter-spacing:.07em}
+  .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:32px;border-left:1px solid #26344e}
+  .price-main .heroValue{font-size:56px}
+  .price-main .heroVnd{margin:0;text-align:left;font-size:15px}
+  .price-panel .heroSub{display:none}
 }
