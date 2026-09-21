@@ -183,13 +183,12 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
       {selectedTx && (() => {
         const outcome = txOutcome(selectedTx.t);
         const tone = outcome.pnl >= 0 ? 'gain' : 'loss';
-        const changeLabel = `${outcome.pnl >= 0 ? 'Tăng' : 'Sụt'}${outcome.realized ? ' đã chốt' : ''}`;
         return <div className="txtooltip" style={{ left: Math.min(Math.max(selectedTx.x, 132), width - 132), top: Math.max(selectedTx.y + 6, 122) }}>
           <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} · {dateVi(selectedTx.t.date)}</strong>
           <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {usd0(selectedTx.t.price)}</span>
           <span className="ttval">{selectedTx.t.type === 'Mua' ? 'Giá trị lúc mua' : 'Vốn giao dịch'}: {usd(Math.abs(selectedTx.t.usd))}</span>
           <span className="tttotal">{outcome.totalLabel}: <b>{usd(outcome.total)}</b></span>
-          <span className={`ttpnl ${tone}`}>{changeLabel}: <b>{usd(outcome.pnl)} ({pct(outcome.pnlPct)})</b></span>
+          <span className={`ttpnl ${tone}`}><b>{outcome.pnl >= 0 ? '▲' : '▼'} {usd(outcome.pnl)} ({pct(outcome.pnlPct)}){outcome.realized ? ' đã chốt' : ''}</b></span>
         </div>;
       })()}
       <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Trung bình giá</span></div>
