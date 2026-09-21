@@ -204,7 +204,8 @@ function TransactionRow({ transaction }: { transaction: Tx }) {
   const purchaseValue = Math.abs(transaction.usd);
   const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
   const change = currentValue - purchaseValue;
-  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(purchaseValue)}</td>{isBuy ? <><td className="r">{usd(currentValue)}</td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}>{change >= 0 ? '▲' : '▼'} {usd(change)}</td></> : <><td className="r tx-empty">—</td><td className="r tx-empty">—</td></>}<td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
+  const changePct = purchaseValue ? (change / purchaseValue) * 100 : 0;
+  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r"><span>{usd(purchaseValue)}</span><span className="tx-sub">{vnd(Math.abs(transaction.vnd))}</span></td>{isBuy ? <><td className="r"><span>{usd(currentValue)}</span><span className="tx-sub">≈ {vnd(currentValue * VND_RATE)}</span></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}><span>{change >= 0 ? '▲' : '▼'} {usd(change)}</span><span className="tx-sub">≈ {vnd(change * VND_RATE)}</span></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}>{pct(changePct)}</td></> : <><td className="r tx-empty">—</td><td className="r tx-empty">—</td><td className="r tx-empty">—</td></>}</tr>;
 }
 
 function TransactionCard({ transaction }: { transaction: Tx }) {
@@ -212,10 +213,11 @@ function TransactionCard({ transaction }: { transaction: Tx }) {
   const purchaseValue = Math.abs(transaction.usd);
   const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
   const change = currentValue - purchaseValue;
+  const changePct = purchaseValue ? (change / purchaseValue) * 100 : 0;
   return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
     <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
     <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
-    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? 'Tăng' : 'Sụt'} {usd(change)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
+    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong><small>{vnd(Math.abs(transaction.vnd))}</small></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong><small>≈ {vnd(currentValue * VND_RATE)}</small></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? 'Tăng' : 'Sụt'} {usd(change)}</strong><small>≈ {vnd(change * VND_RATE)}</small></div><div><span>% gain</span><strong className={change >= 0 ? 'up' : 'down'}>{pct(changePct)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
   </article>;
 }
 
@@ -248,7 +250,7 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
         <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
         <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` · Bán ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
       </summary>
-      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% gain</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
       <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
     </details>
   ))}</div>;
