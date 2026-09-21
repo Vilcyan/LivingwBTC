@@ -3,261 +3,269 @@ import './style.css';
 import { PRICES, TXS, MARKET, type Tx } from './data';
 
 // Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 20/09/2026.
-const AVG_COST = 95380;        // Giá vốn TB / BTC (USD)
-const COST_BASIS = 6016.59;    // Giá vốn BTC đang giữ (USD)
-const REALIZED = -100.64;      // Lãi/Lỗ đã chốt (USD)
-const VND_RATE = 26022;        // Tỷ giá USD/VND dùng để quy đổi tham khảo
+const AVG_COST = 95380;
+const COST_BASIS = 6016.59;
+const REALIZED = -100.64;
+const VND_RATE = 26022;
+const DATA_DATE = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(MARKET.updatedAt));
 
-const HELD = TXS.reduce((s, t) => s + t.btc, 0);
+const HELD = TXS.reduce((sum, tx) => sum + tx.btc, 0);
 const PRICE_NOW = MARKET.currentPrice;
 const VALUE_NOW = HELD * PRICE_NOW;
 const UNREALIZED = VALUE_NOW - COST_BASIS;
 const UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
-const BUYS = TXS.filter((t) => t.type === 'Mua').length;
+const BUYS = TXS.filter((tx) => tx.type === 'Mua').length;
 const SELLS = TXS.length - BUYS;
 
-const usd = (v: number, digits = 2) =>
-    (v < 0 ? '-' : '') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-const usd0 = (v: number) => '$' + Math.round(v).toLocaleString('en-US');
-const vnd = (v: number) => Math.round(v).toLocaleString('vi-VN') + ' ₫';
-const btcFmt = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
-const pct = (v: number) => (v > 0 ? '+' : '') + v.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + '%';
+const usd = (value: number, digits = 2) =>
+  `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+const usd0 = (value: number) => `$${Math.round(value).toLocaleString('en-US')}`;
+const vnd = (value: number) => `${Math.round(value).toLocaleString('vi-VN')} ₫`;
+const btcFmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+const pct = (value: number) => `${value > 0 ? '+' : ''}${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
 const dateVi = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const tsDateVi = (ts: number) => dateVi(new Date(ts * 1000).toISOString().slice(0, 10));
 
-const ORANGE = '#f7931a';
-const RED = '#ea3943';
-const GREEN = '#16c784';
+interface TxOutcome { total: number; pnl: number; pnlPct: number; totalLabel: string; realized: boolean }
+
+// Realized results are copied from the source sheet's transaction-basis columns.
+// Keyed by sell date because each recorded sell date is unique in this snapshot.
+const REALIZED_BY_DATE: Record<string, { pnl: number; pnlPct: number }> = {
+  '2025-08-14': { pnl: 109.8184842, pnlPct: 28.54938164 },
+  '2025-08-22': { pnl: 12.67596578, pnlPct: 17.57523123 },
+  '2025-09-23': { pnl: 32.21689436, pnlPct: 16.7132057 },
+  '2026-07-30': { pnl: -255.3519269, pnlPct: -33.36402971 },
+};
+
+const txOutcome = (transaction: Tx): TxOutcome => {
+  if (transaction.type === 'Mua') {
+    const principal = Math.abs(transaction.usd);
+    const total = Math.abs(transaction.btc) * PRICE_NOW;
+    const pnl = total - principal;
+    return { total, pnl, pnlPct: principal ? (pnl / principal) * 100 : 0, totalLabel: 'Giá trị hiện tại', realized: false };
+  }
+  const realized = REALIZED_BY_DATE[transaction.date];
+  return {
+    total: Math.abs(transaction.usd),
+    pnl: realized?.pnl ?? 0,
+    pnlPct: realized?.pnlPct ?? 0,
+    totalLabel: 'Tổng đã thu',
+    realized: true,
+  };
+};
 
 const RANGES: { key: string; label: string; from?: number }[] = [
-    { key: 'all', label: 'Tất cả' },
-    { key: '2022', label: '2022', from: Date.UTC(2022, 0, 1) / 1000 },
-    { key: '2023', label: '2023', from: Date.UTC(2023, 0, 1) / 1000 },
-    { key: '2024', label: '2024', from: Date.UTC(2024, 0, 1) / 1000 },
-    { key: '2025', label: '2025', from: Date.UTC(2025, 0, 1) / 1000 },
-    { key: '2026', label: '2026', from: Date.UTC(2026, 0, 1) / 1000 },
+  { key: 'all', label: 'Tất cả' },
+  ...[2022, 2023, 2024, 2025, 2026].map((year) => ({ key: String(year), label: String(year), from: Date.UTC(year, 0, 1) / 1000 })),
 ];
 
 function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
-    const [w, setW] = useState(0);
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const ro = new ResizeObserver((entries) => setW(entries[0].contentRect.width));
-        ro.observe(el);
-        setW(el.clientWidth);
-        return () => ro.disconnect();
-    }, [ref]);
-    return w;
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver((entries) => setWidth(entries[0].contentRect.width));
+    observer.observe(element);
+    setWidth(element.clientWidth);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
 }
 
 interface Hover { x: number; y: number; price: number; ts: number }
 
 function PriceChart({ rangeKey }: { rangeKey: string }) {
-    const wrapRef = useRef<HTMLDivElement>(null);
-    const width = useContainerWidth(wrapRef);
-    const [hover, setHover] = useState<Hover | null>(null);
-    const [txHover, setTxHover] = useState<{ t: Tx; x: number; y: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const width = useContainerWidth(wrapRef);
+  const [hover, setHover] = useState<Hover | null>(null);
+  const [selectedTx, setSelectedTx] = useState<{ t: Tx; x: number; y: number } | null>(null);
 
-    const range = RANGES.find((r) => r.key === rangeKey) ?? RANGES[0];
-    const fromTs = range.from ?? PRICES[0][0];
-    const toTs = range.key === 'all' ? PRICES[PRICES.length - 1][0] : Math.min((range.from ?? 0) + 365 * 86400 + 86400, PRICES[PRICES.length - 1][0]);
+  useEffect(() => { setHover(null); setSelectedTx(null); }, [rangeKey]);
 
-    const points = useMemo(() => PRICES.filter(([ts]) => ts >= fromTs && ts <= toTs), [fromTs, toTs]);
-    const txs = useMemo(() => TXS.filter((t) => t.ts >= fromTs && t.ts <= toTs), [fromTs, toTs]);
+  const range = RANGES.find((item) => item.key === rangeKey) ?? RANGES[0];
+  const fromTs = range.from ?? PRICES[0][0];
+  const toTs = range.key === 'all' ? PRICES[PRICES.length - 1][0] : Math.min((range.from ?? 0) + 366 * 86400, PRICES[PRICES.length - 1][0]);
+  const points = useMemo(() => PRICES.filter(([ts]) => ts >= fromTs && ts <= toTs), [fromTs, toTs]);
+  const transactions = useMemo(() => TXS.filter((tx) => tx.ts >= fromTs && tx.ts <= toTs), [fromTs, toTs]);
 
-    const height = width < 640 ? 300 : 400;
-    const m = { l: 56, r: 18, t: 18, b: 30 };
-    const iw = Math.max(width - m.l - m.r, 10);
-    const ih = height - m.t - m.b;
+  const height = width < 640 ? 300 : 400;
+  const margin = { l: width < 420 ? 50 : 56, r: width < 420 ? 12 : 18, t: 28, b: 30 };
+  const innerWidth = Math.max(width - margin.l - margin.r, 10);
+  const innerHeight = height - margin.t - margin.b;
+  const low = Math.min(...points.map((point) => point[1]), AVG_COST);
+  const high = Math.max(...points.map((point) => point[1]), AVG_COST);
+  const pad = (high - low) * 0.07 || 1;
+  const yMin = low - pad;
+  const yMax = high + pad;
+  const t0 = points[0][0];
+  const t1 = points[points.length - 1][0];
+  const x = (ts: number) => margin.l + ((ts - t0) / Math.max(t1 - t0, 1)) * innerWidth;
+  const y = (price: number) => margin.t + (1 - (price - yMin) / (yMax - yMin)) * innerHeight;
 
-    const lo = Math.min(...points.map((p) => p[1]), AVG_COST);
-    const hi = Math.max(...points.map((p) => p[1]), AVG_COST);
-    const pad = (hi - lo) * 0.07 || 1;
-    const yMin = lo - pad;
-    const yMax = hi + pad;
-    const t0 = points[0][0];
-    const t1 = points[points.length - 1][0];
-    const x = (ts: number) => m.l + ((ts - t0) / Math.max(t1 - t0, 1)) * iw;
-    const y = (p: number) => m.t + (1 - (p - yMin) / (yMax - yMin)) * ih;
+  const rawStep = (yMax - yMin) / 4;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = Math.ceil(rawStep / magnitude) * magnitude;
+  const yTicks: number[] = [];
+  for (let value = Math.ceil(yMin / step) * step; value <= yMax; value += step) yTicks.push(value);
 
-    // y ticks: 5 lines at a round step
-    const rawStep = (yMax - yMin) / 4;
-    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const step = Math.ceil(rawStep / mag) * mag;
-    const yTicks: number[] = [];
-    for (let v = Math.ceil(yMin / step) * step; v <= yMax; v += step) yTicks.push(v);
-
-    // x ticks: years for long ranges, months otherwise
-    const spanDays = (t1 - t0) / 86400;
-    const xTicks: { ts: number; label: string }[] = [];
-    if (spanDays > 400) {
-        for (let yr = new Date(t0 * 1000).getUTCFullYear(); yr <= new Date(t1 * 1000).getUTCFullYear(); yr++) {
-            const ts = Date.UTC(yr, 0, 1) / 1000;
-            if (ts >= t0 && ts <= t1) xTicks.push({ ts, label: String(yr) });
-        }
-    } else {
-        const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
-        const start = new Date(t0 * 1000);
-        for (let mo = start.getUTCMonth(); mo < 12; mo++) {
-            const ts = Date.UTC(start.getUTCFullYear(), mo, 1) / 1000;
-            if (ts >= t0 && ts <= t1) xTicks.push({ ts, label: months[mo] });
-        }
+  const spanDays = (t1 - t0) / 86400;
+  const xTicks: { ts: number; label: string }[] = [];
+  if (spanDays > 400) {
+    for (let year = new Date(t0 * 1000).getUTCFullYear(); year <= new Date(t1 * 1000).getUTCFullYear(); year++) {
+      const ts = Date.UTC(year, 0, 1) / 1000;
+      if (ts >= t0 && ts <= t1) xTicks.push({ ts, label: String(year) });
     }
+  } else {
+    const start = new Date(t0 * 1000);
+    for (let month = start.getUTCMonth(); month < 12; month++) {
+      const ts = Date.UTC(start.getUTCFullYear(), month, 1) / 1000;
+      if (ts >= t0 && ts <= t1) xTicks.push({ ts, label: `T${month + 1}` });
+    }
+  }
 
-    const path = points.map((p, i) => (i === 0 ? 'M' : 'L') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${x(point[0]).toFixed(1)} ${y(point[1]).toFixed(1)}`).join(' ');
+  const pickNearest = (clientX: number, svg: SVGSVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    const px = ((clientX - rect.left) / rect.width) * width;
+    const ts = t0 + ((px - margin.l) / innerWidth) * (t1 - t0);
+    let best = points[0];
+    for (const point of points) if (Math.abs(point[0] - ts) < Math.abs(best[0] - ts)) best = point;
+    setSelectedTx(null);
+    setHover({ x: x(best[0]), y: y(best[1]), price: best[1], ts: best[0] });
+  };
+  const selectTransaction = (transaction: Tx, cx: number, cy: number) => {
+    setHover(null);
+    setSelectedTx((current) => current?.t === transaction ? null : { t: transaction, x: cx, y: cy });
+  };
+  const last = points[points.length - 1];
+  const avgLabelWidth = width < 420 ? 126 : 148;
+  const avgLabelX = width - margin.r - avgLabelWidth;
+  const avgLabelY = Math.max(y(AVG_COST) - 23, 3);
 
-    const onMove = (e: React.MouseEvent<SVGRectElement>) => {
-        const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
-        const px = ((e.clientX - rect.left) / rect.width) * width;
-        const ts = t0 + ((px - m.l) / iw) * (t1 - t0);
-        let best = points[0];
-        for (const p of points) if (Math.abs(p[0] - ts) < Math.abs(best[0] - ts)) best = p;
-        setHover({ x: x(best[0]), y: y(best[1]), price: best[1], ts: best[0] });
-    };
+  return (
+    <div className="chart-wrap" ref={wrapRef}>
+      {width > 0 && (
+        <svg width={width} height={height} role="img" aria-label={`Biểu đồ giá Bitcoin, ${range.label}`}>
+          {yTicks.map((value) => (
+            <g key={value}>
+              <line x1={margin.l} x2={width - margin.r} y1={y(value)} y2={y(value)} className="grid" />
+              <text x={margin.l - 8} y={y(value) + 4} className="tick" textAnchor="end">{usd0(value)}</text>
+            </g>
+          ))}
+          {xTicks.map((tick) => <text key={tick.ts} x={x(tick.ts)} y={height - 8} className="tick" textAnchor="middle">{tick.label}</text>)}
+          <line x1={margin.l} x2={width - margin.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
+          <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height="20" rx="5" className="avglabel-bg" />
+          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Giá vốn TB {usd0(AVG_COST)}</text>
+          <path d={path} className="priceline" />
+          <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
+            onMouseMove={(event) => pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement)}
+            onMouseLeave={() => setHover(null)}
+            onPointerDown={(event) => { if (event.pointerType === 'touch') pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement); }} />
+          {hover && !selectedTx && <g><line x1={hover.x} x2={hover.x} y1={margin.t} y2={height - margin.b} className="crosshair" /><circle cx={hover.x} cy={hover.y} r={5} className="dot-hover" /></g>}
+          {transactions.map((transaction, index) => {
+            const cx = x(transaction.ts);
+            const cy = y(transaction.price);
+            const active = selectedTx?.t === transaction;
+            const label = `${transaction.type} ${btcFmt(Math.abs(transaction.btc))} BTC ngày ${dateVi(transaction.date)}, giá ${usd0(transaction.price)}`;
+            return <circle key={`${transaction.ts}-${transaction.type}-${index}`} cx={cx} cy={cy} r={width < 640 ? 5.5 : 7}
+              className={`${transaction.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
+              role="button" tabIndex={0} aria-label={label}
+              onMouseEnter={() => { setHover(null); setSelectedTx({ t: transaction, x: cx, y: cy }); }}
+              onMouseLeave={() => setSelectedTx(null)}
+              onPointerDown={(event) => { event.stopPropagation(); if (event.pointerType === 'touch') selectTransaction(transaction, cx, cy); else { setHover(null); setSelectedTx({ t: transaction, x: cx, y: cy }); } }}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectTransaction(transaction, cx, cy); } }} />;
+          })}
+          <circle cx={x(last[0])} cy={y(last[1])} r={4.5} className="dot-now" />
+        </svg>
+      )}
+      {hover && !selectedTx && <div className="tooltip" style={{ left: Math.min(Math.max(hover.x, 90), width - 90) }}><strong>{usd0(hover.price)}</strong><span>{tsDateVi(hover.ts)}</span></div>}
+      {selectedTx && (() => {
+        const outcome = txOutcome(selectedTx.t);
+        const tone = outcome.pnl >= 0 ? 'gain' : 'loss';
+        const changeLabel = `${outcome.pnl >= 0 ? 'Tăng' : 'Sụt'}${outcome.realized ? ' đã chốt' : ''}`;
+        return <div className="txtooltip" style={{ left: Math.min(Math.max(selectedTx.x, 132), width - 132), top: Math.max(selectedTx.y + 6, 122) }}>
+          <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} · {dateVi(selectedTx.t.date)}</strong>
+          <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {usd0(selectedTx.t.price)}</span>
+          <span className="ttval">Vốn giao dịch: {usd(Math.abs(selectedTx.t.usd))}</span>
+          <span className="tttotal">{outcome.totalLabel}: <b>{usd(outcome.total)}</b></span>
+          <span className={`ttpnl ${tone}`}>{changeLabel}: <b>{usd(outcome.pnl)} ({pct(outcome.pnlPct)})</b></span>
+        </div>;
+      })()}
+      <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Giá vốn TB</span></div>
+    </div>
+  );
+}
 
-    const last = points[points.length - 1];
+interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number }
 
-    return (
-        <div className="chart-wrap" ref={wrapRef}>
-            {width > 0 && (
-                <svg width={width} height={height} role="img" aria-label="Biểu đồ giá BTC">
-                    {yTicks.map((v) => (
-                        <g key={v}>
-                            <line x1={m.l} x2={width - m.r} y1={y(v)} y2={y(v)} className="grid" />
-                            <text x={m.l - 8} y={y(v) + 4} className="tick" textAnchor="end">{usd0(v)}</text>
-                        </g>
-                    ))}
-                    {xTicks.map((t) => (
-                        <text key={t.ts} x={x(t.ts)} y={height - 8} className="tick" textAnchor="middle">{t.label}</text>
-                    ))}
-                    <line x1={m.l} x2={width - m.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
-                    <text x={width - m.r} y={y(AVG_COST) - 6} className="avglabel" textAnchor="end">Giá vốn TB {usd0(AVG_COST)}</text>
-                    <path d={path} className="priceline" />
-                    <rect x={m.l} y={m.t} width={iw} height={ih} fill="transparent" onMouseMove={onMove} onMouseLeave={() => setHover(null)} />
-                    {hover && !txHover && (
-                        <g>
-                            <line x1={hover.x} x2={hover.x} y1={m.t} y2={height - m.b} className="crosshair" />
-                            <circle cx={hover.x} cy={hover.y} r={5} className="dot-hover" />
-                        </g>
-                    )}
-                    {txs.map((t) => {
-                        const cx = x(t.ts);
-                        const cy = y(t.price);
-                        const active = txHover?.t === t;
-                        return (
-                            <circle key={t.ts + t.type} cx={cx} cy={cy} r={t.type === 'Mua' ? 7 : 7.5}
-                                className={`${t.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
-                                onMouseEnter={() => { setHover(null); setTxHover({ t, x: cx, y: cy }); }}
-                                onMouseLeave={() => { if (!window.matchMedia('(pointer: coarse)').matches) setTxHover(null); }}
-                                onClick={(e) => { e.stopPropagation(); const next = { t, x: cx, y: cy }; setTxHover((prev) => window.matchMedia('(pointer: coarse)').matches ? next : (prev && prev.t === t ? null : next)); }} />
-                        );
-                    })}
-                    <circle cx={x(last[0])} cy={y(last[1])} r={4.5} className="dot-now" />
-                </svg>
-            )}
-            {hover && !txHover && (
-                <div className="tooltip" style={{ left: Math.min(Math.max(hover.x, 90), width - 90) }}>
-                    <strong>{usd0(hover.price)}</strong>
-                    <span>{tsDateVi(hover.ts)}</span>
-                </div>
-            )}
-            {txHover && (
-                <div className="txtooltip" style={{ left: Math.min(Math.max(txHover.x, 110), width - 110), top: txHover.y + 6 }}>
-                    <strong className={txHover.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{txHover.t.type} · {dateVi(txHover.t.date)}</strong>
-                    <span>{btcFmt(Math.abs(txHover.t.btc))} BTC @ {usd0(txHover.t.price)}</span>
-                    <span className="ttval">{usd(Math.abs(txHover.t.usd))} · ≈ {vnd(Math.abs(txHover.t.vnd))}</span>
-                    {txHover.t.type === 'Mua' ? (
-                        <>
-                            <span className={(PRICE_NOW - txHover.t.price) * Math.abs(txHover.t.btc) >= 0 ? 'buytxt' : 'selltxt'}>
-                                Hiện tại: {usd((PRICE_NOW - txHover.t.price) * Math.abs(txHover.t.btc))}
-                            </span>
-                            <span>{pct((PRICE_NOW / txHover.t.price - 1) * 100)} so với giá mua</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>Chênh giá bán với hiện tại: {usd(txHover.t.price - PRICE_NOW, 0)}/BTC</span>
-                            <span>{pct((txHover.t.price / PRICE_NOW - 1) * 100)} · {usd(Math.abs(txHover.t.btc) * (txHover.t.price - PRICE_NOW))} trên lượng đã bán</span>
-                        </>
-                    )}
-                </div>
-            )}
-            <div className="legend">
-                <span><i className="lg-line" /> Giá BTC</span>
-                <span><i className="lg-buy" /> Lần DCA mua ({BUYS})</span>
-                <span><i className="lg-sell" /> Lần bán ({SELLS})</span>
-                <span><i className="lg-avg" /> Giá vốn TB</span>
-            </div>
-        </div>
-    );
+function TransactionRow({ transaction }: { transaction: Tx }) {
+  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r">{usd(Math.abs(transaction.usd))}</td><td className="r">{vnd(Math.abs(transaction.vnd))}</td></tr>;
+}
+
+function TransactionCard({ transaction }: { transaction: Tx }) {
+  return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
+    <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
+    <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
+    <div className="tx-card-money"><span>{usd(Math.abs(transaction.usd))}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>
+  </article>;
+}
+
+function TransactionHistory({ rangeKey }: { rangeKey: string }) {
+  const groups = useMemo<MonthGroup[]>(() => {
+    const filtered = rangeKey === 'all' ? TXS : TXS.filter((tx) => tx.date.startsWith(rangeKey));
+    const map = new Map<string, Tx[]>();
+    [...filtered].reverse().forEach((tx) => {
+      const key = tx.date.slice(0, 7);
+      map.set(key, [...(map.get(key) ?? []), tx]);
+    });
+    return [...map.entries()].map(([key, transactions]) => {
+      const [year, month] = key.split('-');
+      return {
+        key,
+        label: `Tháng ${Number(month)}/${year}`,
+        transactions,
+        buys: transactions.filter((tx) => tx.type === 'Mua').length,
+        sells: transactions.filter((tx) => tx.type === 'Bán').length,
+        btcBought: transactions.filter((tx) => tx.type === 'Mua').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
+        btcSold: transactions.filter((tx) => tx.type === 'Bán').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
+        usdTotal: transactions.reduce((sum, tx) => sum + Math.abs(tx.usd), 0),
+      };
+    });
+  }, [rangeKey]);
+
+  return <div className="months" key={rangeKey}>{groups.map((group) => (
+    <details className="month" key={group.key} open={group.key === '2026-09'}>
+      <summary>
+        <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
+        <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` · Bán ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
+      </summary>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">USD</th><th className="r">VND</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
+      <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
+    </details>
+  ))}</div>;
 }
 
 export function App() {
-    const [rangeKey, setRangeKey] = useState('all');
-    const up = UNREALIZED >= 0;
-    return (
-        <main className="page-shell">
-            <div className="dark">
-                <div className="topbar">
-                    <div className="brand"><span className="blogo">₿</span> BTC Portfolio</div>
-                    <div className="live"><span className="livedot" /> Giá cập nhật {dateVi(MARKET.updatedAt.slice(0, 10))}</div>
-                </div>
-                <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
-                <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua đều đặn và {SELLS} lần chốt một phần. Mỗi chấm trên biểu đồ là một lần mua hoặc bán thật, đặt đúng ngày và đúng giá.</p>
+  const [rangeKey, setRangeKey] = useState('all');
+  const up = UNREALIZED >= 0;
+  return <main className="page-shell"><div className="dark">
+    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div>
+    <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
+    <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
-                <div className="heroStat">
-                    <div className="heroLabel">Giá trị hiện tại</div>
-                    <div className="heroValue">{usd(VALUE_NOW)}</div>
-                    <div className="heroSub">
-                        <span>₿ {btcFmt(HELD)}</span>
-                        <span>Giá vốn TB: {usd0(AVG_COST)}</span>
-                        <span className={up ? 'up' : 'down'}>{up ? '▲' : '▼'} {pct(UNREALIZED_PCT)} ({usd(UNREALIZED, 0)})</span>
-                    </div>
-                    <div className="heroNote">Giá BTC {usd0(PRICE_NOW)} · ≈ {vnd(VALUE_NOW * VND_RATE)}</div>
-                </div>
+    <section className="hero-grid" aria-label="Tổng quan danh mục và giá Bitcoin">
+      <div className="hero-panel primary"><div className="heroLabel">Giá trị danh mục</div><div className="heroValue">{usd(VALUE_NOW)}</div><div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div><div className="heroSub"><span>{btcFmt(HELD)} BTC</span><span className={up ? 'up' : 'down'}>{up ? '▲' : '▼'} {pct(UNREALIZED_PCT)} ({usd(UNREALIZED, 0)})</span></div></div>
+      <div className="hero-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div><div className="heroSub"><span>Giá vốn TB {usd0(AVG_COST)}</span></div></div>
+    </section>
 
-                <div className="statGrid">
-                    <div className="stat"><div className="sLabel">BTC đang giữ</div><div className="sValue">₿ {HELD.toFixed(8)}</div></div>
-                    <div className="stat"><div className="sLabel">Giá vốn đang giữ</div><div className="sValue">{usd(COST_BASIS)}</div></div>
-                    <div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div>
-                    <div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div>
-                </div>
+    <div className="statGrid"><div className="stat"><div className="sLabel">BTC đang giữ</div><div className="sValue">{btcFmt(HELD)} BTC</div></div><div className="stat"><div className="sLabel">Giá vốn đang giữ</div><div className="sValue">{usd(COST_BASIS)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ chưa chốt</div><div className={`sValue ${up ? 'up' : 'down'}`}>{usd(UNREALIZED)}</div><div className="sSub">{pct(UNREALIZED_PCT)}</div></div><div className="stat"><div className="sLabel">Lãi/lỗ đã chốt</div><div className={`sValue ${REALIZED >= 0 ? 'up' : 'down'}`}>{usd(REALIZED)}</div><div className="sSub">{SELLS} lần bán</div></div></div>
 
-                <div className="sectionHead">
-                    <h2>Giá BTC và các lần DCA</h2>
-                    <div className="ranges">
-                        {RANGES.map((r) => (
-                            <button key={r.key} className={rangeKey === r.key ? 'range active' : 'range'} onClick={() => setRangeKey(r.key)}>{r.label}</button>
-                        ))}
-                    </div>
-                </div>
-                <PriceChart rangeKey={rangeKey} />
+    <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
+    <PriceChart rangeKey={rangeKey} />
 
-                <h2 className="h2">Lịch sử giao dịch</h2>
-                <div className="tableWrap">
-                    <table>
-                        <thead>
-                            <tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">USD</th><th className="r">VND</th></tr>
-                        </thead>
-                        <tbody>
-                            {[...TXS].reverse().map((t, i) => (
-                                <tr key={i} className={t.type === 'Bán' ? 'sell' : ''}>
-                                    <td>{dateVi(t.date)}</td>
-                                    <td>{t.type}</td>
-                                    <td className="r">{btcFmt(Math.abs(t.btc))}</td>
-                                    <td className="r">{usd0(t.price)}</td>
-                                    <td className="r">{usd(Math.abs(t.usd))}</td>
-                                    <td className="r">{vnd(Math.abs(t.vnd))}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+    <div className="history-head"><div><h2>Lịch sử giao dịch</h2><p>{rangeKey === 'all' ? 'Tất cả các năm' : `Năm ${rangeKey}`} · nhóm theo tháng</p></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
+    <TransactionHistory rangeKey={rangeKey} />
 
-                <footer className="closing">
-                    Giá BTC hiện tại và lịch sử từ CoinGecko, tự cập nhật qua GitHub Actions. Giao dịch từ Sheet BTC riêng tư, chỉ dữ liệu đã lọc được đưa lên trang public. Trang chỉ để xem, không mua bán gì ở đây.
-                </footer>
-            </div>
-        </main>
-    );
+    <p className="closing">Giá BTC hiện tại từ {MARKET.source}, cập nhật {DATA_DATE}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
+  </div></main>;
 }
