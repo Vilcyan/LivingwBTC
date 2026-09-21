@@ -197,7 +197,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
   );
 }
 
-interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number }
+interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number; buyChange: number }
 
 function TransactionRow({ transaction }: { transaction: Tx }) {
   const isBuy = transaction.type === 'Mua';
@@ -217,7 +217,7 @@ function TransactionCard({ transaction }: { transaction: Tx }) {
   return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
     <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
     <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
-    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong><small>{vnd(Math.abs(transaction.vnd))}</small></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong><small>≈ {vnd(currentValue * VND_RATE)}</small></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? 'Tăng' : 'Sụt'} {usd(change)}</strong><small>≈ {vnd(change * VND_RATE)}</small></div><div><span>% gain</span><strong className={change >= 0 ? 'up' : 'down'}>{pct(changePct)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
+    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong><small>{vnd(Math.abs(transaction.vnd))}</small></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong><small>≈ {vnd(currentValue * VND_RATE)}</small></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? 'Tăng' : 'Sụt'} {usd(change)}</strong><small>≈ {vnd(change * VND_RATE)}</small></div><div><span>% Tăng</span><strong className={change >= 0 ? 'up' : 'down'}>{pct(changePct)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
   </article>;
 }
 
@@ -240,6 +240,7 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
         btcBought: transactions.filter((tx) => tx.type === 'Mua').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
         btcSold: transactions.filter((tx) => tx.type === 'Bán').reduce((sum, tx) => sum + Math.abs(tx.btc), 0),
         usdTotal: transactions.reduce((sum, tx) => sum + Math.abs(tx.usd), 0),
+        buyChange: transactions.filter((tx) => tx.type === 'Mua').reduce((sum, tx) => sum + Math.abs(tx.btc) * PRICE_NOW - Math.abs(tx.usd), 0),
       };
     });
   }, [rangeKey]);
@@ -248,9 +249,9 @@ function TransactionHistory({ rangeKey }: { rangeKey: string }) {
     <details className="month" key={group.key} open={group.key === '2026-09'}>
       <summary>
         <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
-        <div className="month-total"><strong>{usd(group.usdTotal)}</strong><span>{group.btcBought ? `Mua ${btcFmt(group.btcBought)} BTC` : ''}{group.btcSold ? ` · Bán ${btcFmt(group.btcSold)} BTC` : ''}</span></div>
+        <div className="month-total">{group.btcBought ? <span className="month-buy">Mua <b>{btcFmt(group.btcBought)} BTC</b></span> : null}<div className="month-total-row"><strong>{usd(group.usdTotal)}</strong>{group.btcBought ? <span className={`month-change ${group.buyChange >= 0 ? 'up' : 'down'}`}>{group.buyChange >= 0 ? 'Tăng' : 'Sụt'} {usd(group.buyChange)}</span> : null}</div>{group.btcSold ? <span>Bán {btcFmt(group.btcSold)} BTC</span> : null}</div>
       </summary>
-      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% gain</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% Tăng</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
       <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
     </details>
   ))}</div>;
