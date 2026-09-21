@@ -11,6 +11,7 @@ const DATA_DATE = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh
 
 const HELD = TXS.reduce((sum, tx) => sum + tx.btc, 0);
 const PRICE_NOW = MARKET.currentPrice;
+const CHANGE_24H = MARKET.change24h;
 const VALUE_NOW = HELD * PRICE_NOW;
 const UNREALIZED = VALUE_NOW - COST_BASIS;
 const UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
@@ -254,7 +255,7 @@ export function App() {
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
-      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="heroValue">{usd0(PRICE_NOW)}</div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="price-24h"><div className="h24-label">Tăng/giảm 24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
     </section>
 
     <div className="summaryGrid" aria-label="Tổng quan danh mục">
