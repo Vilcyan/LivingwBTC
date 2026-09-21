@@ -20,11 +20,11 @@
 .price-panel .heroVnd{grid-area:vnd;margin:0 0 3px;text-align:right}
 .price-panel .heroSub{grid-area:sub;margin-top:1px;padding-top:10px;border-top:1px solid #26344e}
 .summaryGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:36px}
-.holdings-card{display:flex;flex-direction:column;gap:0}
-.holdings-card .heroLabel{margin-bottom:10px}
-.holdings-card .heroValue{font-size:30px}
-.holdings-card .heroUsd{margin-top:8px}
-.holdings-card .heroVnd{margin-top:auto;padding-top:12px}
+.holdings-card{display:flex;flex-direction:column;gap:10px}
+.holdings-card .heroValue{font-size:30px;color:#f7931a}
+.holdings-card .heroUsd{font-size:28px}
+.holdings-card .heroVnd{font-size:19px}
+.price-24h{display:none}
 .change-card{padding:20px;background:#131c2e;border:1px solid #26344e}
 .change-title{color:#fff;font-size:17px;font-weight:700;line-height:1.25;margin-bottom:4px}
 .change-rows{display:flex;flex-direction:column}
@@ -54,8 +54,8 @@
 /* Desktop-only price composition: bigger label in the left third, bigger price and VND below it in the right two-thirds; average cost stays mobile-only. */
 @media(min-width:768px){
   .price-panel{
-    grid-template-columns:minmax(0,1fr) minmax(0,2fr);
-    grid-template-areas:"label main";
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:"label main change";
     align-items:stretch;
     column-gap:0;
     min-height:132px;
@@ -64,5 +64,8 @@
   .price-main{grid-area:main;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:32px;border-left:1px solid #26344e}
   .price-main .heroValue{font-size:56px}
   .price-main .heroVnd{margin:0;text-align:left;font-size:15px}
+  .price-24h{grid-area:change;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:32px;border-left:1px solid #26344e}
+  .price-24h .h24-label{color:#8b94a7;font-size:12px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.085em}
+  .price-24h .h24-value{font-size:30px;font-weight:700;line-height:1.15;letter-spacing:-.02em;white-space:nowrap}
   .price-panel .heroSub{display:none}
 }
