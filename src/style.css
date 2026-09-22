@@ -110,3 +110,11 @@
 .roll,.roll-static{line-height:1em;vertical-align:baseline}
 .rolling{align-items:flex-start}
 .roll-static{display:inline-block;height:1em;line-height:1em}
+
+/* Optical alignment: lift the leading USD symbol slightly without moving separators or VND suffix. */
+.price-panel .rolling .roll-static:first-child{transform:translateY(-.08em)}
+
+/* Keep the data timestamp first and the currency switch to its right. */
+.topbar-actions .live{order:0}
+.topbar-actions .currency-toggle{order:1}
+@media(max-width:639px){.topbar-actions .live{order:-1}}
