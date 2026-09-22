@@ -118,3 +118,8 @@
 .topbar-actions .live{order:0}
 .topbar-actions .currency-toggle{order:1}
 @media(max-width:639px){.topbar-actions .live{order:-1}}
+
+/* On mobile, align the alternate-currency line with the left edge of the large price. */
+@media(max-width:639px){
+  .price-panel .heroVnd{justify-self:center;width:min(100%,330px);box-sizing:border-box;padding-right:85px}
+}
