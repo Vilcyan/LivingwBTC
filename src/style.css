@@ -108,3 +108,5 @@
 /* Keep currency symbols and rolling digits on one typographic baseline. */
 .rolling{align-items:baseline}
 .roll,.roll-static{line-height:1em;vertical-align:baseline}
+.rolling{align-items:flex-start}
+.roll-static{display:inline-block;height:1em;line-height:1em}
