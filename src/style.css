@@ -121,5 +121,5 @@
 
 /* On mobile, align the alternate-currency line with the left edge of the large price. */
 @media(max-width:639px){
-  .price-panel .heroVnd{justify-self:center;width:min(100%,330px);box-sizing:border-box;padding-right:85px}
+  .price-panel .heroVnd{justify-self:center;width:min(100%,330px);box-sizing:border-box;padding-left:62.65625px}
 }
