@@ -35,6 +35,14 @@ type Currency = 'USD' | 'VND';
 const money = (valueUsd: number, currency: Currency, digits = 2) => currency === 'USD' ? usd(valueUsd, digits) : vnd(valueUsd * VND_RATE);
 const money0 = (valueUsd: number, currency: Currency) => currency === 'USD' ? usd0(valueUsd) : vnd(valueUsd * VND_RATE);
 const axisMoney = (valueUsd: number, currency: Currency) => currency === 'USD' ? usd0(valueUsd) : vndShort(valueUsd * VND_RATE);
+const chartLabelWidth = (...lines: string[]) => {
+  if (typeof document === 'undefined') return Math.max(...lines.map((line) => line.length * 6.2)) + 14;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) return Math.max(...lines.map((line) => line.length * 6.2)) + 14;
+  context.font = '700 10.5px Inter, ui-sans-serif, system-ui, sans-serif';
+  return Math.ceil(Math.max(...lines.map((line) => context.measureText(line).width))) + 14;
+};
 
 function MoneyPair({ valueUsd, currency, mainClass = '', subClass = '', usdDigits = 2, prefix = '' }: { valueUsd: number; currency: Currency; mainClass?: string; subClass?: string; usdDigits?: number; prefix?: string }) {
   const main = currency === 'USD' ? usd(valueUsd, usdDigits) : vnd(valueUsd * VND_RATE);
@@ -169,13 +177,13 @@ function PriceChart({ rangeKey, currency }: { rangeKey: string; currency: Curren
   };
   const last = points[points.length - 1];
   const avgLabelTwoLine = currency === 'VND';
-  const avgLabelWidth = avgLabelTwoLine ? 132 : 122;
-  const avgLabelHeight = avgLabelTwoLine ? 32 : 20;
-  const avgLabelOnLeft = width < 640;
-  const avgLabelX = avgLabelOnLeft ? margin.l : width - margin.r - avgLabelWidth;
-  const avgLabelTextX = avgLabelOnLeft ? avgLabelX + 7 : width - margin.r - 7;
-  const avgLabelY = Math.max(y(AVG_COST) - (avgLabelTwoLine ? 33 : 23), 3);
   const avgValue = avgLabelTwoLine ? vndShort(AVG_COST * VND_RATE) : money0(AVG_COST, currency);
+  const avgLabelLines = avgLabelTwoLine ? ['Trung bình giá', avgValue] : [`Trung bình giá ${avgValue}`];
+  const avgLabelWidth = chartLabelWidth(...avgLabelLines);
+  const avgLabelHeight = avgLabelTwoLine ? 32 : 20;
+  const avgLabelX = margin.l;
+  const avgLabelTextX = avgLabelX + 7;
+  const avgLabelY = Math.max(y(AVG_COST) - (avgLabelTwoLine ? 33 : 23), 3);
 
   return (
     <div className="chart-wrap" ref={wrapRef}>
@@ -192,11 +200,11 @@ function PriceChart({ rangeKey, currency }: { rangeKey: string; currency: Curren
           <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height={avgLabelHeight} rx="5" className="avglabel-bg" />
           {avgLabelTwoLine ? (
             <>
-              <text x={avgLabelTextX} y={avgLabelY + 12} className="avglabel" textAnchor={avgLabelOnLeft ? 'start' : 'end'}>Trung bình giá</text>
-              <text x={avgLabelTextX} y={avgLabelY + 25} className="avglabel" textAnchor={avgLabelOnLeft ? 'start' : 'end'}>{avgValue}</text>
+              <text x={avgLabelTextX} y={avgLabelY + 12} className="avglabel" textAnchor="start">Trung bình giá</text>
+              <text x={avgLabelTextX} y={avgLabelY + 25} className="avglabel" textAnchor="start">{avgValue}</text>
             </>
           ) : (
-            <text x={avgLabelTextX} y={avgLabelY + 14} className="avglabel" textAnchor={avgLabelOnLeft ? 'start' : 'end'}>Trung bình giá {avgValue}</text>
+            <text x={avgLabelTextX} y={avgLabelY + 14} className="avglabel" textAnchor="start">Trung bình giá {avgValue}</text>
           )}
           <path d={path} className="priceline" />
           <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
@@ -373,3 +381,4 @@ export function App() {
     <p className="closing">Giá BTC hiện tại từ {MARKET.source}, {priceTick ? 'cập nhật trực tiếp mỗi phút' : `cập nhật ${DATA_DATE}`}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
                                                                                                                         }
+
