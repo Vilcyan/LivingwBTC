@@ -105,14 +105,11 @@
   .currency-vnd .change-value{font-size:18px}
   .currency-vnd .tx-card-money-main{font-size:11px}
 }
-/* Keep currency symbols and rolling digits on one typographic baseline. */
-.rolling{align-items:baseline}
-.roll,.roll-static{line-height:1em;vertical-align:baseline}
-.rolling{align-items:flex-start}
-.roll-static{display:inline-block;height:1em;line-height:1em}
-
-/* Optical alignment: lift the leading USD symbol slightly without moving separators or VND suffix. */
-.price-panel .rolling .roll-static:first-child{transform:translateY(-.08em)}
+/* Vertically center currency symbols and rolling digits in the same 1em box. */
+.rolling{align-items:center}
+.roll,.roll-static{line-height:1em;vertical-align:middle}
+.roll-static{display:inline-flex;height:1em;line-height:1em;align-items:center}
+.price-panel .rolling .roll-static:first-child{transform:none}
 
 /* Keep the data timestamp first and the currency switch to its right. */
 .topbar-actions .live{order:0}
