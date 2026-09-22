@@ -26,6 +26,15 @@ const btcFmt = (value: number) => value.toLocaleString('en-US', { minimumFractio
 const pct = (value: number) => `${value > 0 ? '+' : ''}${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
 const dateVi = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const tsDateVi = (ts: number) => dateVi(new Date(ts * 1000).toISOString().slice(0, 10));
+type Currency = 'USD' | 'VND';
+const money = (valueUsd: number, currency: Currency, digits = 2) => currency === 'USD' ? usd(valueUsd, digits) : vnd(valueUsd * VND_RATE);
+const money0 = (valueUsd: number, currency: Currency) => currency === 'USD' ? usd0(valueUsd) : vnd(valueUsd * VND_RATE);
+
+function MoneyPair({ valueUsd, currency, mainClass = '', subClass = '', usdDigits = 2, prefix = '' }: { valueUsd: number; currency: Currency; mainClass?: string; subClass?: string; usdDigits?: number; prefix?: string }) {
+  const main = currency === 'USD' ? usd(valueUsd, usdDigits) : vnd(valueUsd * VND_RATE);
+  const sub = currency === 'USD' ? vnd(valueUsd * VND_RATE) : usd(valueUsd, usdDigits);
+  return <><span className={mainClass}>{prefix}{main}</span><span className={subClass}>≈ {sub}</span></>;
+}
 
 // Rolls each digit of a freshly rendered value up to its final number, odometer-style, on first mount.
 function RollingPrice({ text }: { text: string }) {
@@ -89,7 +98,7 @@ function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
 
 interface Hover { x: number; y: number; price: number; ts: number }
 
-function PriceChart({ rangeKey }: { rangeKey: string }) {
+function PriceChart({ rangeKey, currency }: { rangeKey: string; currency: Currency }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(wrapRef);
   const [hover, setHover] = useState<Hover | null>(null);
@@ -164,13 +173,13 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
           {yTicks.map((value) => (
             <g key={value}>
               <line x1={margin.l} x2={width - margin.r} y1={y(value)} y2={y(value)} className="grid" />
-              <text x={margin.l - 8} y={y(value) + 4} className="tick" textAnchor="end">{usd0(value)}</text>
+              <text x={margin.l - 8} y={y(value) + 4} className="tick" textAnchor="end">{money0(value, currency)}</text>
             </g>
           ))}
           {xTicks.map((tick) => <text key={tick.ts} x={x(tick.ts)} y={height - 8} className="tick" textAnchor="middle">{tick.label}</text>)}
           <line x1={margin.l} x2={width - margin.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
           <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height="20" rx="5" className="avglabel-bg" />
-          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bình giá {usd0(AVG_COST)}</text>
+          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bình giá {money0(AVG_COST, currency)}</text>
           <path d={path} className="priceline" />
           <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
             onMouseMove={(event) => pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement)}
@@ -181,7 +190,7 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
             const cx = x(transaction.ts);
             const cy = y(transaction.price);
             const active = selectedTx?.t === transaction;
-            const label = `${transaction.type} ${btcFmt(Math.abs(transaction.btc))} BTC ngày ${dateVi(transaction.date)}, giá ${usd0(transaction.price)}`;
+            const label = `${transaction.type} ${btcFmt(Math.abs(transaction.btc))} BTC ngày ${dateVi(transaction.date)}, giá ${money0(transaction.price, currency)}`;
             return <circle key={`${transaction.ts}-${transaction.type}-${index}`} cx={cx} cy={cy} r={width < 640 ? 5.5 : 7}
               className={`${transaction.type === 'Mua' ? 'dot-buy' : 'dot-sell'}${active ? ' dot-active' : ''}`}
               role="button" tabIndex={0} aria-label={label}
@@ -193,16 +202,16 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
           <circle cx={x(last[0])} cy={y(last[1])} r={4.5} className="dot-now" />
         </svg>
       )}
-      {hover && !selectedTx && <div className="tooltip" style={{ left: Math.min(Math.max(hover.x, 90), width - 90) }}><strong>{usd0(hover.price)}</strong><span>{tsDateVi(hover.ts)}</span></div>}
+      {hover && !selectedTx && <div className="tooltip" style={{ left: Math.min(Math.max(hover.x, 90), width - 90) }}><strong>{money0(hover.price, currency)}</strong><span>{tsDateVi(hover.ts)}</span></div>}
       {selectedTx && (() => {
         const outcome = txOutcome(selectedTx.t);
         const tone = outcome.pnl >= 0 ? 'gain' : 'loss';
         return <div className="txtooltip" style={{ left: Math.min(Math.max(selectedTx.x, 132), width - 132), top: Math.max(selectedTx.y + 6, 122) }}>
           <strong className={selectedTx.t.type === 'Mua' ? 'buytxt' : 'selltxt'}>{selectedTx.t.type} · {dateVi(selectedTx.t.date)}</strong>
-          <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {usd0(selectedTx.t.price)}</span>
-          <span className="ttval">{selectedTx.t.type === 'Mua' ? 'Giá trị lúc mua' : 'Vốn giao dịch'}: {usd(Math.abs(selectedTx.t.usd))}</span>
-          <span className="tttotal">{outcome.totalLabel}: <b>{usd(outcome.total)}</b></span>
-          <span className={`ttpnl ${tone}`}><b>{outcome.pnl >= 0 ? '▲' : '▼'} {usd(outcome.pnl)} ({pct(outcome.pnlPct)}){outcome.realized ? ' đã chốt' : ''}</b></span>
+          <span>{btcFmt(Math.abs(selectedTx.t.btc))} BTC @ {money0(selectedTx.t.price, currency)}</span>
+          <span className="ttval">{selectedTx.t.type === 'Mua' ? 'Giá trị lúc mua' : 'Vốn giao dịch'}: {money(Math.abs(selectedTx.t.usd), currency)}</span>
+          <span className="tttotal">{outcome.totalLabel}: <b>{money(outcome.total, currency)}</b></span>
+          <span className={`ttpnl ${tone}`}><b>{outcome.pnl >= 0 ? '▲' : '▼'} {money(outcome.pnl, currency)} ({pct(outcome.pnlPct)}){outcome.realized ? ' đã chốt' : ''}</b></span>
         </div>;
       })()}
       <div className="legend"><span><i className="lg-line" /> Giá BTC</span><span><i className="lg-buy" /> Mua ({BUYS})</span><span><i className="lg-sell" /> Bán ({SELLS})</span><span><i className="lg-avg" /> Trung bình giá</span></div>
@@ -212,16 +221,16 @@ function PriceChart({ rangeKey }: { rangeKey: string }) {
 
 interface MonthGroup { key: string; label: string; transactions: Tx[]; buys: number; sells: number; btcBought: number; btcSold: number; usdTotal: number; buyNow: number; buyChange: number }
 
-function TransactionRow({ transaction }: { transaction: Tx }) {
+function TransactionRow({ transaction, currency }: { transaction: Tx; currency: Currency }) {
   const isBuy = transaction.type === 'Mua';
   const purchaseValue = Math.abs(transaction.usd);
   const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
   const change = currentValue - purchaseValue;
   const changePct = purchaseValue ? (change / purchaseValue) * 100 : 0;
-  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{usd0(transaction.price)}</td><td className="r"><span>{usd(purchaseValue)}</span><span className="tx-sub">{vnd(Math.abs(transaction.vnd))}</span></td>{isBuy ? <><td className="r"><span>{usd(currentValue)}</span><span className="tx-sub">≈ {vnd(currentValue * VND_RATE)}</span></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}><span>{change >= 0 ? '▲' : '▼'} {usd(change)}</span><span className="tx-sub">≈ {vnd(change * VND_RATE)}</span></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}>{pct(changePct)}</td></> : <><td className="r tx-empty">—</td><td className="r tx-empty">—</td><td className="r tx-empty">—</td></>}</tr>;
+  return <tr className={transaction.type === 'Bán' ? 'sell' : ''}><td>{dateVi(transaction.date)}</td><td>{transaction.type}</td><td className="r">{btcFmt(Math.abs(transaction.btc))}</td><td className="r">{money0(transaction.price, currency)}</td><td className="r"><MoneyPair valueUsd={purchaseValue} currency={currency} mainClass="money-main" subClass="tx-sub" /></td>{isBuy ? <><td className="r"><MoneyPair valueUsd={currentValue} currency={currency} mainClass="money-main" subClass="tx-sub" /></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}><MoneyPair valueUsd={change} currency={currency} mainClass="money-main" subClass="tx-sub" prefix={`${change >= 0 ? '▲' : '▼'} `} /></td><td className={`r tx-change ${change >= 0 ? 'up' : 'down'}`}>{pct(changePct)}</td></> : <><td className="r tx-empty">—</td><td className="r tx-empty">—</td><td className="r tx-empty">—</td></>}</tr>;
 }
 
-function TransactionCard({ transaction }: { transaction: Tx }) {
+function TransactionCard({ transaction, currency }: { transaction: Tx; currency: Currency }) {
   const isBuy = transaction.type === 'Mua';
   const purchaseValue = Math.abs(transaction.usd);
   const currentValue = Math.abs(transaction.btc) * PRICE_NOW;
@@ -229,12 +238,12 @@ function TransactionCard({ transaction }: { transaction: Tx }) {
   const changePct = purchaseValue ? (change / purchaseValue) * 100 : 0;
   return <article className={`tx-card ${transaction.type === 'Bán' ? 'sell' : ''}`}>
     <div className="tx-card-head"><strong>{transaction.type}</strong><time>{dateVi(transaction.date)}</time></div>
-    <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {usd0(transaction.price)}</span></div>
-    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><strong>{usd(purchaseValue)}</strong><small>{vnd(Math.abs(transaction.vnd))}</small></div><div><span>Giá trị hiện tại</span><strong>{usd(currentValue)}</strong><small>≈ {vnd(currentValue * VND_RATE)}</small></div><div><span>So với lúc mua</span><strong className={change >= 0 ? 'up' : 'down'}>{change >= 0 ? '▲' : '▼'} {usd(change)}</strong><small>≈ {vnd(change * VND_RATE)}</small></div><div><span>% Tăng</span><strong className={change >= 0 ? 'up' : 'down'}>{pct(changePct)}</strong></div></div> : <div className="tx-card-money"><span>{usd(purchaseValue)}</span><span>≈ {vnd(Math.abs(transaction.vnd))}</span></div>}
+    <div className="tx-card-main"><span>{btcFmt(Math.abs(transaction.btc))} BTC</span><span>@ {money0(transaction.price, currency)}</span></div>
+    {isBuy ? <div className="tx-buy-values"><div><span>Giá trị lúc mua</span><MoneyPair valueUsd={purchaseValue} currency={currency} mainClass="tx-card-money-main" subClass="tx-card-money-sub" /></div><div><span>Giá trị hiện tại</span><MoneyPair valueUsd={currentValue} currency={currency} mainClass="tx-card-money-main" subClass="tx-card-money-sub" /></div><div><span>So với lúc mua</span><MoneyPair valueUsd={change} currency={currency} mainClass={change >= 0 ? 'up tx-card-money-main' : 'down tx-card-money-main'} subClass="tx-card-money-sub" prefix={`${change >= 0 ? '▲' : '▼'} `} /></div><div><span>% Tăng</span><strong className={change >= 0 ? 'up' : 'down'}>{pct(changePct)}</strong></div></div> : <div className="tx-card-money"><MoneyPair valueUsd={purchaseValue} currency={currency} mainClass="tx-card-money-main" subClass="tx-card-money-sub" /></div>}
   </article>;
 }
 
-function TransactionHistory({ rangeKey, priceTick }: { rangeKey: string; priceTick: number }) {
+function TransactionHistory({ rangeKey, priceTick, currency }: { rangeKey: string; priceTick: number; currency: Currency }) {
   const groups = useMemo<MonthGroup[]>(() => {
     const filtered = rangeKey === 'all' ? TXS : TXS.filter((tx) => tx.date.startsWith(rangeKey));
     const map = new Map<string, Tx[]>();
@@ -263,10 +272,10 @@ function TransactionHistory({ rangeKey, priceTick }: { rangeKey: string; priceTi
     <details className="month" key={group.key} open={group.key === '2026-09'}>
       <summary>
         <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
-        <div className="month-total">{group.btcBought ? <span className="month-buy">Mua <b>{btcFmt(group.btcBought)} BTC</b></span> : null}<div className="month-total-row"><div className="month-total-main"><strong className={group.btcBought ? (group.buyChange >= 0 ? 'up' : 'down') : ''}>{usd(group.btcBought ? group.buyNow : group.usdTotal)}</strong><span className="month-vnd">≈ {vnd((group.btcBought ? group.buyNow : group.usdTotal) * VND_RATE)}</span></div></div>{group.btcSold ? <span>Bán {btcFmt(group.btcSold)} BTC</span> : null}</div>
+        <div className="month-total">{group.btcBought ? <span className="month-buy">Mua <b>{btcFmt(group.btcBought)} BTC</b></span> : null}<div className="month-total-row"><div className="month-total-main"><MoneyPair valueUsd={group.btcBought ? group.buyNow : group.usdTotal} currency={currency} mainClass={group.btcBought ? (group.buyChange >= 0 ? 'up month-money-main' : 'down month-money-main') : 'month-money-main'} subClass="month-vnd" /></div></div>{group.btcSold ? <span>Bán {btcFmt(group.btcSold)} BTC</span> : null}</div>
       </summary>
-      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% Tăng</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} />)}</tbody></table></div>
-      <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} />)}</div>
+      <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% Tăng</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} currency={currency} />)}</tbody></table></div>
+      <div className="mobile-cards">{group.transactions.map((transaction, index) => <TransactionCard key={`${transaction.ts}-${index}`} transaction={transaction} currency={currency} />)}</div>
     </details>
   ))}</div>;
 }
@@ -274,6 +283,7 @@ function TransactionHistory({ rangeKey, priceTick }: { rangeKey: string; priceTi
 export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const [priceTick, setPriceTick] = useState(0);
+  const [currency, setCurrency] = useState<Currency>('USD');
   // Rebase every price-derived number on a live CoinGecko read, then poll once a minute while the page stays open; on any failure keep the last good price (initially the data.ts snapshot).
   useEffect(() => {
     let cancelled = false;
@@ -301,13 +311,13 @@ export function App() {
   const change24hUp = CHANGE_24H >= 0;
   const change24hBase = 1 + CHANGE_24H / 100;
   const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
-  return <main className="page-shell"><div className="dark">
-    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div>
+  return <main className="page-shell"><div className={`dark currency-${currency.toLowerCase()}`}>
+    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div></div>
     <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
-      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice text={usd0(PRICE_NOW)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {vnd(PRICE_NOW * VND_RATE)}</div></div><div className="heroSub"><span>Trung bình giá {usd0(AVG_COST)}</span></div></div>
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
     </section>
 
     <div className="summaryGrid" aria-label="Tổng quan danh mục">
@@ -315,24 +325,21 @@ export function App() {
         <div className="heroLabel">Số BTC đang nắm giữ</div>
         <div className="heroValue">{btcFmt(HELD)} BTC</div>
         <div className="heroLabel fiatLabel">So với fiat</div>
-        <div className="heroUsd">{usd(VALUE_NOW)}</div>
-        <div className="heroVnd">≈ {vnd(VALUE_NOW * VND_RATE)}</div>
+        <MoneyPair valueUsd={VALUE_NOW} currency={currency} mainClass="heroUsd" subClass="heroVnd" />
       </div>
       <div className="change-card">
-        <div className="change-head"><div className="change-title">Giá trị số BTC đang nắm giữ</div><div className="change-average">Trung bình giá ở: <span className="change-average-value">{usd0(AVG_COST)}</span></div></div>
+        <div className="change-head"><div className="change-title">Giá trị số BTC đang nắm giữ</div><div className="change-average">Trung bình giá ở: <span className="change-average-value">{money0(AVG_COST, currency)}</span></div></div>
         <div className="change-rows">
           <div className="change-row">
             <div className="change-copy"><div className="change-label">Thời điểm hiện tại</div><div className="change-detail"><span className={up ? 'up' : 'down'}>{up ? 'Tăng' : 'Giảm'} {pct(UNREALIZED_PCT)}</span> so với tổng giá trị lúc mua</div></div>
             <div className="change-money">
-              <div className={`change-value ${up ? 'up' : 'down'}`}>{up ? '▲' : '▼'} {usd(UNREALIZED)}</div>
-              <div className="change-vnd">≈ {vnd(UNREALIZED * VND_RATE)}</div>
+              <MoneyPair valueUsd={UNREALIZED} currency={currency} mainClass={`change-value ${up ? 'up' : 'down'}`} subClass="change-vnd" prefix={`${up ? '▲' : '▼'} `} />
             </div>
           </div>
           <div className="change-row">
             <div className="change-copy"><div className="change-label">Giá trị tăng giảm trong 24h</div><div className="change-detail"><span className={change24hUp ? 'up' : 'down'}>{change24hUp ? 'Tăng' : 'Sụt'} {pct(CHANGE_24H)}</span> theo giá BTC</div></div>
             <div className="change-money">
-              <div className={`change-value ${change24hUp ? 'up' : 'down'}`}>{change24hUp ? '▲' : '▼'} {usd(valueChange24h)}</div>
-              <div className="change-vnd">≈ {vnd(valueChange24h * VND_RATE)}</div>
+              <MoneyPair valueUsd={valueChange24h} currency={currency} mainClass={`change-value ${change24hUp ? 'up' : 'down'}`} subClass="change-vnd" prefix={`${change24hUp ? '▲' : '▼'} `} />
             </div>
           </div>
         </div>
@@ -340,10 +347,10 @@ export function App() {
     </div>
 
     <div className="sectionHead"><h2>Giá BTC và các lần DCA</h2><div className="range-scroll" aria-label="Lọc theo năm"><div className="ranges">{RANGES.map((range) => <button key={range.key} className={rangeKey === range.key ? 'range active' : 'range'} aria-pressed={rangeKey === range.key} onClick={() => setRangeKey(range.key)}>{range.label}</button>)}</div></div></div>
-    <PriceChart rangeKey={rangeKey} />
+    <PriceChart rangeKey={rangeKey} currency={currency} />
 
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
-    <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} />
+    <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} currency={currency} />
 
     <p className="closing">Giá BTC hiện tại từ {MARKET.source}, {priceTick ? 'cập nhật trực tiếp mỗi phút' : `cập nhật ${DATA_DATE}`}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
