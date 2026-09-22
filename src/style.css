@@ -127,3 +127,9 @@
 
 /* Keep the alternate currency beside the main monthly total on compact cards. */
 @media(max-width:639px){.month .month-total-main{flex-direction:row;align-items:baseline;gap:8px}.month .month-vnd{margin-top:0}}
+
+
+/* One Bitcoin quote is picked on each page load. */
+.btc-quote{margin:0 0 24px;padding:12px 16px;max-width:820px;border-left:3px solid #f7931a;background:rgba(247,147,26,.06);border-radius:0 10px 10px 0;color:#dce3ee;font-size:15px;font-style:italic;line-height:1.55}
+.btc-quote cite{display:inline;margin-left:8px;color:#8f99ab;font-size:13px;font-style:normal;white-space:nowrap}
+@media(max-width:639px){.btc-quote{margin-bottom:20px;padding:10px 12px;font-size:14px}.btc-quote cite{display:block;margin:5px 0 0;white-space:normal}}
