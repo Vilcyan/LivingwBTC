@@ -138,3 +138,11 @@
 /* Keep the rotating quote and currency switch on one row; the data-date line was removed. */
 .topbar-actions{flex:0 0 auto}
 @media(max-width:639px){.topbar{flex-direction:row;align-items:flex-start;gap:12px}.brand-stack{width:auto;flex:1;min-width:0}.topbar-actions{width:auto;flex:0 0 auto}.btc-quote{max-width:100%}}
+
+
+/* Rotate quotes every 10 seconds with a downward roll. */
+.quote-window{max-width:820px;overflow:hidden;border-radius:0 10px 10px 0}
+.btc-quote{animation:quote-roll-down .55s cubic-bezier(.22,.8,.25,1)}
+@keyframes quote-roll-down{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.btc-quote{animation:none}}
+@media(max-width:639px){.quote-window{max-width:100%}}
