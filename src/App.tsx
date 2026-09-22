@@ -298,6 +298,9 @@ export function App() {
     return () => { cancelled = true; clearInterval(timer); };
   }, []);
   const up = UNREALIZED >= 0;
+  const change24hUp = CHANGE_24H >= 0;
+  const change24hBase = 1 + CHANGE_24H / 100;
+  const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
   return <main className="page-shell"><div className="dark">
     <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div>
     <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
@@ -326,10 +329,10 @@ export function App() {
             </div>
           </div>
           <div className="change-row">
-            <div className="change-copy"><div className="change-label">Đã ghi nhận</div><div className="change-detail"><span className={REALIZED >= 0 ? 'up' : 'down'}>{SELLS}</span> lần bán</div></div>
+            <div className="change-copy"><div className="change-label">Giá trị tăng giảm trong 24h</div><div className="change-detail"><span className={change24hUp ? 'up' : 'down'}>{change24hUp ? 'Tăng' : 'Sụt'} {pct(CHANGE_24H)}</span> theo giá BTC</div></div>
             <div className="change-money">
-              <div className={`change-value ${REALIZED >= 0 ? 'up' : 'down'}`}>{REALIZED >= 0 ? '▲' : '▼'} {usd(REALIZED)}</div>
-              <div className="change-vnd">≈ {vnd(REALIZED * VND_RATE)}</div>
+              <div className={`change-value ${change24hUp ? 'up' : 'down'}`}>{change24hUp ? '▲' : '▼'} {usd(valueChange24h)}</div>
+              <div className="change-vnd">≈ {vnd(valueChange24h * VND_RATE)}</div>
             </div>
           </div>
         </div>
