@@ -273,7 +273,7 @@ function TransactionHistory({ rangeKey, priceTick, currency }: { rangeKey: strin
   return <div className="months" key={rangeKey}>{groups.map((group) => (
     <details className="month" key={group.key} open={group.key === '2026-09'}>
       <summary>
-        <div><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
+        <div className="month-meta"><strong>{group.label}</strong><span>{group.transactions.length} giao dịch · {group.buys} mua{group.sells ? ` · ${group.sells} bán` : ''}</span></div>
         <div className="month-total">{group.btcBought ? <span className="month-buy">Mua <b>{btcFmt(group.btcBought)} BTC</b></span> : null}<div className="month-total-row"><div className="month-total-main"><MoneyPair valueUsd={group.btcBought ? group.buyNow : group.usdTotal} currency={currency} mainClass={group.btcBought ? (group.buyChange >= 0 ? 'up month-money-main' : 'down month-money-main') : 'month-money-main'} subClass="month-vnd" /></div></div>{group.btcSold ? <span>Bán {btcFmt(group.btcSold)} BTC</span> : null}</div>
       </summary>
       <div className="tableWrap desktop-table"><table><thead><tr><th>Ngày</th><th>Loại</th><th className="r">Số BTC</th><th className="r">Giá BTC</th><th className="r">Giá trị lúc mua</th><th className="r">Giá trị hiện tại</th><th className="r">So với lúc mua</th><th className="r">% Tăng</th></tr></thead><tbody>{group.transactions.map((transaction, index) => <TransactionRow key={`${transaction.ts}-${index}`} transaction={transaction} currency={currency} />)}</tbody></table></div>
