@@ -323,7 +323,12 @@ export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const [priceTick, setPriceTick] = useState(0);
   const [currency, setCurrency] = useState<Currency>('USD');
-  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
+  const quote = QUOTES[quoteIndex];
+  useEffect(() => {
+    const timer = setInterval(() => setQuoteIndex((index) => (index + 1) % QUOTES.length), 10000);
+    return () => clearInterval(timer);
+  }, []);
   // Rebase every price-derived number on a live CoinGecko read, then poll once a minute while the page stays open; on any failure keep the last good price (initially the data.ts snapshot).
   useEffect(() => {
     let cancelled = false;
@@ -352,7 +357,7 @@ export function App() {
   const change24hBase = 1 + CHANGE_24H / 100;
   const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
   return <main className="page-shell"><div className={`dark currency-${currency.toLowerCase()}`}>
-    <div className="topbar"><div className="brand-stack"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><blockquote className="btc-quote">“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</blockquote></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div></div>
+    <div className="topbar"><div className="brand-stack"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><div className="quote-window" aria-live="polite"><blockquote className="btc-quote" key={quoteIndex}>“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</blockquote></div></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div></div></div>
     <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán.</p>
 
