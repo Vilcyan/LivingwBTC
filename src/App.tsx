@@ -358,8 +358,8 @@ export function App() {
   const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
   return <main className="page-shell"><div className={`dark currency-${currency.toLowerCase()}`}>
     <div className="topbar"><div className="brand-stack"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><div className="quote-window" aria-live="polite"><blockquote className="btc-quote" key={quoteIndex}>“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</blockquote></div></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div></div></div>
-    <h1 className="title">Hành trình DCA Bitcoin của Cyan</h1>
-    <p className="intro">Bắt đầu từ tháng 1/2022: {TXS.length} giao dịch.</p>
+    <h1 className="title">Danh mục tích luỹ BTC của Cyan</h1>
+    <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022 với tổng {TXS.length} lượt giao dịch, {BUYS} lần mua và {SELLS} lần bán</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
       <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
