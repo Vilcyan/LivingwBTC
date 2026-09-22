@@ -124,3 +124,6 @@
 
 /* Keep mobile monthly transaction counts on the same left-aligned row as the month. */
 @media(max-width:639px){.month summary .month-meta{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:10px}.month summary .month-meta span{white-space:nowrap}}
+
+/* Keep the alternate currency beside the main monthly total on compact cards. */
+@media(max-width:639px){.month .month-total-main{flex-direction:row;align-items:baseline;gap:8px}.month .month-vnd{margin-top:0}}
