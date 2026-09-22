@@ -163,7 +163,9 @@ function PriceChart({ rangeKey, currency }: { rangeKey: string; currency: Curren
   };
   const last = points[points.length - 1];
   const avgLabelWidth = 122;
-  const avgLabelX = width - margin.r - avgLabelWidth;
+  const avgLabelOnLeft = width < 640;
+  const avgLabelX = avgLabelOnLeft ? margin.l : width - margin.r - avgLabelWidth;
+  const avgLabelTextX = avgLabelOnLeft ? avgLabelX + 7 : width - margin.r - 7;
   const avgLabelY = Math.max(y(AVG_COST) - 23, 3);
 
   return (
@@ -179,7 +181,7 @@ function PriceChart({ rangeKey, currency }: { rangeKey: string; currency: Curren
           {xTicks.map((tick) => <text key={tick.ts} x={x(tick.ts)} y={height - 8} className="tick" textAnchor="middle">{tick.label}</text>)}
           <line x1={margin.l} x2={width - margin.r} y1={y(AVG_COST)} y2={y(AVG_COST)} className="avgline" />
           <rect x={avgLabelX} y={avgLabelY} width={avgLabelWidth} height="20" rx="5" className="avglabel-bg" />
-          <text x={width - margin.r - 7} y={avgLabelY + 14} className="avglabel" textAnchor="end">Trung bình giá {money0(AVG_COST, currency)}</text>
+          <text x={avgLabelTextX} y={avgLabelY + 14} className="avglabel" textAnchor={avgLabelOnLeft ? 'start' : 'end'}>Trung bình giá {money0(AVG_COST, currency)}</text>
           <path d={path} className="priceline" />
           <rect x={margin.l} y={margin.t} width={innerWidth} height={innerHeight} fill="transparent"
             onMouseMove={(event) => pickNearest(event.clientX, event.currentTarget.ownerSVGElement as SVGSVGElement)}
