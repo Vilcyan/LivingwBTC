@@ -83,3 +83,28 @@
 .roll-digit{display:block;height:1em;line-height:1em}
 .roll-strip{display:block;transform:translateY(0);transition:transform 1.6s cubic-bezier(.15,.75,.2,1);will-change:transform}
 @media(prefers-reduced-motion:reduce){.roll-strip{transition:none!important}}
+
+
+/* USD/VND display switch: selected unit leads, alternate unit stays as the quiet sub-line. */
+.topbar-actions{display:flex;align-items:center;gap:14px}
+.currency-toggle{display:inline-flex;padding:3px;background:#101a2b;border:1px solid #26344e;border-radius:9px;flex:0 0 auto}
+.currency-toggle button{appearance:none;border:0;background:transparent;color:#8b94a7;border-radius:6px;padding:5px 9px;font:700 11px/1.2 inherit;letter-spacing:.04em;cursor:pointer}
+.currency-toggle button.active{background:#f7931a;color:#0b1220}
+.currency-toggle button:focus-visible{outline:3px solid rgba(247,147,26,.55);outline-offset:2px}
+.money-main,.month-money-main,.tx-card-money-main{display:block}
+.change-vnd,.heroVnd,.month-vnd,.tx-card-money-sub{display:block}
+.currency-vnd .price-main .heroValue{font-size:42px}
+.currency-vnd .holdings-card .heroUsd{font-size:23px}
+.currency-vnd .change-value{font-size:21px}
+.currency-vnd .month-money-main{font-size:13px}
+@media(max-width:639px){
+  .topbar-actions{width:100%;align-items:flex-start;justify-content:space-between;gap:10px}
+  .live{order:-1}
+  .currency-vnd .price-main .heroValue{font-size:27px}
+  .currency-vnd .holdings-card .heroUsd{font-size:22px}
+  .currency-vnd .change-value{font-size:18px}
+  .currency-vnd .tx-card-money-main{font-size:11px}
+}
+/* Keep currency symbols and rolling digits on one typographic baseline. */
+.rolling{align-items:baseline}
+.roll,.roll-static{line-height:1em;vertical-align:baseline}
