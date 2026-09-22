@@ -120,3 +120,7 @@
 @media(max-width:639px){
   .price-panel .heroVnd{justify-self:center;width:min(100%,330px);box-sizing:border-box;padding-left:62.65625px}
 }
+
+
+/* Keep mobile monthly transaction counts on the same left-aligned row as the month. */
+@media(max-width:639px){.month summary .month-meta{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:10px}.month summary .month-meta span{white-space:nowrap}}
