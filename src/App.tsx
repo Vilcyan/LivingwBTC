@@ -92,6 +92,19 @@ const txOutcome = (transaction: Tx): TxOutcome => {
   };
 };
 
+const QUOTES = [
+  { text: 'Not your keys, not your coins.' },
+  { text: 'Fix the money, fix the world.' },
+  { text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.", author: 'Satoshi Nakamoto' },
+  { text: "The root problem with conventional currency is all the trust that's required to make it work.", author: 'Satoshi Nakamoto' },
+  { text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.", author: 'Satoshi Nakamoto' },
+  { text: 'It might make sense just to get some in case it catches on.', author: 'Satoshi Nakamoto' },
+  { text: 'History shows it is not possible to insulate yourself from the consequences of others holding money that is harder than yours.', author: 'The Bitcoin Standard' },
+  { text: 'Bitcoin is a bank in cyberspace, run by incorruptible software.', author: 'Michael Saylor' },
+  { text: 'Bitcoin is the internet of money.', author: 'Andreas Antonopoulos' },
+  { text: 'Chancellor on brink of second bailout for banks.', author: 'Bitcoin genesis block' },
+];
+
 const RANGES: { key: string; label: string; from?: number }[] = [
   { key: 'all', label: 'Tất cả' },
   ...[2022, 2023, 2024, 2025, 2026].map((year) => ({ key: String(year), label: String(year), from: Date.UTC(year, 0, 1) / 1000 })),
@@ -310,6 +323,7 @@ export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const [priceTick, setPriceTick] = useState(0);
   const [currency, setCurrency] = useState<Currency>('USD');
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   // Rebase every price-derived number on a live CoinGecko read, then poll once a minute while the page stays open; on any failure keep the last good price (initially the data.ts snapshot).
   useEffect(() => {
     let cancelled = false;
@@ -338,9 +352,10 @@ export function App() {
   const change24hBase = 1 + CHANGE_24H / 100;
   const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
   return <main className="page-shell"><div className={`dark currency-${currency.toLowerCase()}`}>
-    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>BTC Portfolio</span></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div></div>
+    <div className="topbar"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div><div className="live"><span className="livedot" /> Dữ liệu chốt cuối ngày {DATA_DATE} (GMT+7)</div></div></div>
     <h1 className="title">Danh mục đầu tư BTC của Mike</h1>
-    <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán. Mỗi chấm trên biểu đồ là một giao dịch thật, đặt đúng ngày và giá.</p>
+    <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022: {TXS.length} giao dịch, {BUYS} lần mua và {SELLS} lần bán.</p>
+    <blockquote className="btc-quote">“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</blockquote>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
       <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
