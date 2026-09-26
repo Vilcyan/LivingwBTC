@@ -399,6 +399,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
   const compareFirst = compare.length ? points[compare[0]] : null;
   const compareSecond = compare.length === 2 ? points[compare[1]] : null;
   const comparePct = compareFirst && compareSecond ? (compareSecond.price / compareFirst.price - 1) * 100 : null;
+  const compareText = comparePct === null ? '' : `${comparePct >= 0 ? '+' : '−'}${Math.abs(comparePct).toLocaleString('vi-VN', {maximumFractionDigits: 2})}%`;
   type LabelSide = 'above' | 'below';
   type LabelBox = { left: number; top: number; right: number; bottom: number };
   const boxOverlap = (a: LabelBox, b: LabelBox) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
@@ -422,7 +423,9 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       measure(detailDate(points[index].t), '400 9px Inter, ui-sans-serif, system-ui, sans-serif')
     )) + 12;
     const CARD_H = 34, CARD_GAP = 16;
-    const DELTA_W = 70, DELTA_H = 25, DELTA_GAP = 7;
+    const deltaWidth = Math.ceil(measure(compareText, `800 ${labelFontSize}px Inter, ui-sans-serif, system-ui, sans-serif`)) + 10;
+    const deltaHeight = labelFontSize * 1.3 + 6; // line height + 2px vertical padding + border
+    const DELTA_GAP = 7;
     const offsets = [0, -64, 64, -128, 128, -192, 192];
     const sides: LabelSide[] = ['above', 'below'];
     const bound = (value: number, half: number) => Math.max(half + 3, Math.min(width - half - 3, value));
@@ -434,14 +437,14 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       return { left: cx - cardW / 2, top, right: cx + cardW / 2, bottom: top + CARD_H };
     };
     const deltaBox = (side: LabelSide): LabelBox => {
-      const cx = bound((xPx(compare[0]) + xPx(compare[1])) / 2, DELTA_W / 2);
+      const cx = bound((xPx(compare[0]) + xPx(compare[1])) / 2, deltaWidth / 2);
       const cy = (yPx(compareFirst.price) + yPx(compareSecond!.price)) / 2;
-      const top = side === 'above' ? cy - DELTA_GAP - DELTA_H : cy + DELTA_GAP;
-      return { left: cx - DELTA_W / 2, top, right: cx + DELTA_W / 2, bottom: top + DELTA_H };
+      const top = side === 'above' ? cy - DELTA_GAP - deltaHeight : cy + DELTA_GAP;
+      return { left: cx - deltaWidth / 2, top, right: cx + deltaWidth / 2, bottom: top + deltaHeight };
     };
     if (!compareSecond) {
       const firstSide = cardBox(compare[0], 0, 'above', 0).top >= 0 ? 'above' : 'below';
-      return { firstSide, firstDx: 0, secondSide: 'below' as LabelSide, secondDx: 0, deltaSide: 'above' as LabelSide, cardWidths: [cardWidth(compare[0], 0)] };
+      return { firstSide, firstDx: 0, secondSide: 'below' as LabelSide, secondDx: 0, deltaSide: 'above' as LabelSide, deltaWidth, deltaHeight, cardWidths: [cardWidth(compare[0], 0)] };
     }
     let best: { s1: LabelSide; d1: number; s2: LabelSide; d2: number; sd: LabelSide; score: number } | null = null;
     for (const sd of sides) for (const s1 of sides) for (const d1 of offsets) for (const s2 of sides) for (const d2 of offsets) {
@@ -454,7 +457,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       if (sd !== 'above') score += 8;
       if (best === null || score < best.score) best = { s1, d1, s2, d2, sd, score };
     }
-    return best ? { firstSide: best.s1, firstDx: best.d1, secondSide: best.s2, secondDx: best.d2, deltaSide: best.sd, cardWidths: [cardWidth(compare[0], 0), cardWidth(compare[1], 1)] } : null;
+    return best ? { firstSide: best.s1, firstDx: best.d1, secondSide: best.s2, secondDx: best.d2, deltaSide: best.sd, deltaWidth, deltaHeight, cardWidths: [cardWidth(compare[0], 0), cardWidth(compare[1], 1)] } : null;
   })();
   const pickIndex = (clientX: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect();
@@ -472,7 +475,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       {compare.map((index, position) => <g key={position} style={{pointerEvents: 'none'}}><circle cx={x(index)} cy={y(points[index].price)} r="12" fill="#f7931a" stroke="#101a2b" strokeWidth="2" vectorEffect="non-scaling-stroke"/><text x={x(index)} y={y(points[index].price)+4} textAnchor="middle" fill="#101a2b" fontSize="12" fontWeight="800">{position+1}</text></g>)}
       {selected !== null && <><line x1={x(selected)} x2={x(selected)} y1="21" y2="246" stroke="#9aa3b5" strokeDasharray="3 4"/><circle cx={x(selected)} cy={y(current.price)} r="5" fill="#f7931a" stroke="#0b1220" strokeWidth="2"/></>}
       {[0,1,2,3,4,5,6,7].map(index => {const point=points[Math.round((points.length-1)*index/7)]; const date = new Date(point.t); const label = interval==='1w'||interval==='1d' ? detailDate(point.t,true) : new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit'}).format(date);return <text key={index} x={58+824*index/7} y="278" textAnchor={index===0?'start':index===7?'end':'middle'} fill="#94a0b4" fontSize="12">{label}</text>;})}
-    </svg>{compareFirst && compareSecond && comparePct !== null && <div className={`btc-detail-delta ${comparePct >= 0 ? 'up' : 'down'} ${compareLayout?.deltaSide === 'below' ? 'is-below' : ''}`} style={{ '--compare-x': `${(x(compare[0]) + x(compare[1])) / 2 / 940 * 100}%`, '--compare-y': `${(y(compareFirst.price) + y(compareSecond.price)) / 2 / 304 * 100}%` } as React.CSSProperties}>{comparePct >= 0 ? '+' : '−'}{Math.abs(comparePct).toLocaleString('vi-VN', {maximumFractionDigits: 2})}%</div>}
+    </svg>{compareFirst && compareSecond && comparePct !== null && <div className={`btc-detail-delta ${comparePct >= 0 ? 'up' : 'down'} ${compareLayout?.deltaSide === 'below' ? 'is-below' : ''}`} style={{ '--compare-x': `${(x(compare[0]) + x(compare[1])) / 2 / 940 * 100}%`, '--compare-y': `${(y(compareFirst.price) + y(compareSecond.price)) / 2 / 304 * 100}%`, '--delta-width': `${compareLayout?.deltaWidth}px`, '--delta-height': `${compareLayout?.deltaHeight}px`, '--delta-half': `${(compareLayout?.deltaWidth ?? 0) / 2 + 3}px` } as React.CSSProperties}>{compareText}</div>}
     {compare.map((index, position) => <div className={`btc-detail-point-card ${((position === 0 ? compareLayout?.firstSide : compareLayout?.secondSide) ?? (position === 0 ? 'above' : 'below')) === 'below' ? 'is-below' : 'is-above'}`} key={position} style={{ '--point-x': `${x(index) / 940 * 100}%`, '--point-shift': `${(position === 0 ? compareLayout?.firstDx : compareLayout?.secondDx) ?? 0}px`, '--card-width': `${compareLayout?.cardWidths[position] ?? 124}px`, '--card-half': `${((compareLayout?.cardWidths[position] ?? 124) / 2) + 3}px`, '--point-y': `${y(points[index].price) / 304 * 100}%` } as React.CSSProperties}><strong>{position + 1} · <span className="btc-detail-card-price">{money0(points[index].price, currency)}</span></strong><time>{detailDate(points[index].t)}</time></div>)}
     {selected !== null && <div className={`btc-detail-cursor ${y(current.price) < 124 ? 'is-below' : ''}`} style={{ '--cursor-x': `${x(selected) / 940 * 100}%` } as React.CSSProperties}><strong>{money0(current.price, currency)}</strong><time>{detailDate(current.t)} · GMT+7</time></div>}</div></>}
     {!points.length && loading && <p className="btc-detail-status">Đang tải giá BTC...</p>}
