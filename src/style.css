@@ -176,3 +176,10 @@
 .price-panel .btc-detail-toggle .toggle-chevron{flex:none;display:block;width:16px;height:16px;transform:rotate(0deg);transition:transform .18s ease}
 .price-panel .btc-detail-toggle .toggle-chevron.is-open{transform:rotate(180deg)}
 @media(max-width:639px){.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{min-width:91px;min-height:40px;padding:0 9px;font-size:13px;gap:5px}.price-panel .btc-detail-toggle .toggle-chevron{width:14px;height:14px}}
+
+/* Center the word itself, not just the word-plus-icon group. */
+.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{display:grid;grid-template-columns:16px 1fr 16px;align-items:center;justify-items:center;column-gap:5px;min-width:116px;padding:0 9px}
+.price-panel .btc-detail-toggle::before{content:'';width:16px;height:16px;grid-column:1}
+.price-panel .btc-detail-toggle .toggle-label{grid-column:2;margin:0;color:inherit;font:inherit;white-space:nowrap;text-align:center}
+.price-panel .btc-detail-toggle .toggle-chevron{grid-column:3}
+@media(max-width:639px){.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{grid-template-columns:14px 1fr 14px;column-gap:3px;min-width:95px;padding:0 5px;font-size:12px}.price-panel .btc-detail-toggle::before{width:14px;height:14px}}
