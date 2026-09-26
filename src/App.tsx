@@ -474,7 +474,5 @@ export function App() {
 
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} currency={currency} />
-
-    <p className="closing">Giá BTC hiện tại từ {MARKET.source}, {priceTick ? 'cập nhật trực tiếp mỗi phút' : `cập nhật ${DATA_DATE}`}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
                                                                                                                         }
