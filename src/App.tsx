@@ -409,16 +409,29 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
     const width = plotSize.width, height = plotSize.height;
     const xPx = (index: number) => x(index) / 940 * width;
     const yPx = (price: number) => y(price) / 304 * height;
-    const CARD_W = 124, CARD_H = 43, CARD_GAP = 16;
+    // Match each label's box to its own text, including the wider VND amount.
+    const labelFontSize = window.matchMedia('(max-width:639px)').matches ? 10 : 11;
+    const measure = (text: string, font: string) => {
+      const context = document.createElement('canvas').getContext('2d');
+      if (!context) return text.length * labelFontSize * .65;
+      context.font = font;
+      return context.measureText(text).width;
+    };
+    const cardWidth = (index: number, position: number) => Math.ceil(Math.max(
+      measure(`${position + 1} · ${money0(points[index].price, currency)}`, `700 ${labelFontSize}px Inter, ui-sans-serif, system-ui, sans-serif`),
+      measure(detailDate(points[index].t), '400 9px Inter, ui-sans-serif, system-ui, sans-serif')
+    )) + 12;
+    const CARD_H = 34, CARD_GAP = 16;
     const DELTA_W = 70, DELTA_H = 25, DELTA_GAP = 7;
     const offsets = [0, -64, 64, -128, 128, -192, 192];
     const sides: LabelSide[] = ['above', 'below'];
     const bound = (value: number, half: number) => Math.max(half + 3, Math.min(width - half - 3, value));
-    const cardBox = (index: number, side: LabelSide, dx: number): LabelBox => {
-      const cx = bound(xPx(index) + dx, CARD_W / 2);
+    const cardBox = (index: number, position: number, side: LabelSide, dx: number): LabelBox => {
+      const cardW = cardWidth(index, position);
+      const cx = bound(xPx(index) + dx, cardW / 2);
       const cy = yPx(points[index].price);
       const top = side === 'above' ? cy - CARD_GAP - CARD_H : cy + CARD_GAP;
-      return { left: cx - CARD_W / 2, top, right: cx + CARD_W / 2, bottom: top + CARD_H };
+      return { left: cx - cardW / 2, top, right: cx + cardW / 2, bottom: top + CARD_H };
     };
     const deltaBox = (side: LabelSide): LabelBox => {
       const cx = bound((xPx(compare[0]) + xPx(compare[1])) / 2, DELTA_W / 2);
@@ -427,12 +440,12 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       return { left: cx - DELTA_W / 2, top, right: cx + DELTA_W / 2, bottom: top + DELTA_H };
     };
     if (!compareSecond) {
-      const firstSide = cardBox(compare[0], 'above', 0).top >= 0 ? 'above' : 'below';
-      return { firstSide, firstDx: 0, secondSide: 'below' as LabelSide, secondDx: 0, deltaSide: 'above' as LabelSide };
+      const firstSide = cardBox(compare[0], 0, 'above', 0).top >= 0 ? 'above' : 'below';
+      return { firstSide, firstDx: 0, secondSide: 'below' as LabelSide, secondDx: 0, deltaSide: 'above' as LabelSide, cardWidths: [cardWidth(compare[0], 0)] };
     }
     let best: { s1: LabelSide; d1: number; s2: LabelSide; d2: number; sd: LabelSide; score: number } | null = null;
     for (const sd of sides) for (const s1 of sides) for (const d1 of offsets) for (const s2 of sides) for (const d2 of offsets) {
-      const b1 = cardBox(compare[0], s1, d1), b2 = cardBox(compare[1], s2, d2), bd = deltaBox(sd);
+      const b1 = cardBox(compare[0], 0, s1, d1), b2 = cardBox(compare[1], 1, s2, d2), bd = deltaBox(sd);
       let score = (boxOverlap(b1, b2) + boxOverlap(b1, bd) + boxOverlap(b2, bd)) * 1000;
       if ([b1, b2, bd].some(box => box.top < 0 || box.bottom > height)) score += 1e7;
       score += Math.abs(d1) + Math.abs(d2);
@@ -441,7 +454,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       if (sd !== 'above') score += 8;
       if (best === null || score < best.score) best = { s1, d1, s2, d2, sd, score };
     }
-    return best ? { firstSide: best.s1, firstDx: best.d1, secondSide: best.s2, secondDx: best.d2, deltaSide: best.sd } : null;
+    return best ? { firstSide: best.s1, firstDx: best.d1, secondSide: best.s2, secondDx: best.d2, deltaSide: best.sd, cardWidths: [cardWidth(compare[0], 0), cardWidth(compare[1], 1)] } : null;
   })();
   const pickIndex = (clientX: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect();
@@ -460,7 +473,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
       {selected !== null && <><line x1={x(selected)} x2={x(selected)} y1="21" y2="246" stroke="#9aa3b5" strokeDasharray="3 4"/><circle cx={x(selected)} cy={y(current.price)} r="5" fill="#f7931a" stroke="#0b1220" strokeWidth="2"/></>}
       {[0,1,2,3,4,5,6,7].map(index => {const point=points[Math.round((points.length-1)*index/7)]; const date = new Date(point.t); const label = interval==='1w'||interval==='1d' ? detailDate(point.t,true) : new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit'}).format(date);return <text key={index} x={58+824*index/7} y="278" textAnchor={index===0?'start':index===7?'end':'middle'} fill="#94a0b4" fontSize="12">{label}</text>;})}
     </svg>{compareFirst && compareSecond && comparePct !== null && <div className={`btc-detail-delta ${comparePct >= 0 ? 'up' : 'down'} ${compareLayout?.deltaSide === 'below' ? 'is-below' : ''}`} style={{ '--compare-x': `${(x(compare[0]) + x(compare[1])) / 2 / 940 * 100}%`, '--compare-y': `${(y(compareFirst.price) + y(compareSecond.price)) / 2 / 304 * 100}%` } as React.CSSProperties}>{comparePct >= 0 ? '+' : '−'}{Math.abs(comparePct).toLocaleString('vi-VN', {maximumFractionDigits: 2})}%</div>}
-    {compare.map((index, position) => <div className={`btc-detail-point-card ${((position === 0 ? compareLayout?.firstSide : compareLayout?.secondSide) ?? (position === 0 ? 'above' : 'below')) === 'below' ? 'is-below' : 'is-above'}`} key={position} style={{ '--point-x': `${x(index) / 940 * 100}%`, '--point-shift': `${(position === 0 ? compareLayout?.firstDx : compareLayout?.secondDx) ?? 0}px`, '--point-y': `${y(points[index].price) / 304 * 100}%` } as React.CSSProperties}><strong>{position + 1} · <span className="btc-detail-card-price">{money0(points[index].price, currency)}</span></strong><time>{detailDate(points[index].t)}</time></div>)}
+    {compare.map((index, position) => <div className={`btc-detail-point-card ${((position === 0 ? compareLayout?.firstSide : compareLayout?.secondSide) ?? (position === 0 ? 'above' : 'below')) === 'below' ? 'is-below' : 'is-above'}`} key={position} style={{ '--point-x': `${x(index) / 940 * 100}%`, '--point-shift': `${(position === 0 ? compareLayout?.firstDx : compareLayout?.secondDx) ?? 0}px`, '--card-width': `${compareLayout?.cardWidths[position] ?? 124}px`, '--card-half': `${((compareLayout?.cardWidths[position] ?? 124) / 2) + 3}px`, '--point-y': `${y(points[index].price) / 304 * 100}%` } as React.CSSProperties}><strong>{position + 1} · <span className="btc-detail-card-price">{money0(points[index].price, currency)}</span></strong><time>{detailDate(points[index].t)}</time></div>)}
     {selected !== null && <div className={`btc-detail-cursor ${y(current.price) < 124 ? 'is-below' : ''}`} style={{ '--cursor-x': `${x(selected) / 940 * 100}%` } as React.CSSProperties}><time>{detailDate(current.t)} · GMT+7</time><strong>{money0(current.price, currency)}</strong></div>}</div></>}
     {!points.length && loading && <p className="btc-detail-status">Đang tải giá BTC...</p>}
     {error && <p className="btc-detail-error" role="alert">{points.length ? 'Chưa cập nhật được giá mới. Đang giữ dữ liệu gần nhất.' : 'Chưa tải được biểu đồ. Hãy thử lại sau.'}</p>}
