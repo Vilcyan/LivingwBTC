@@ -183,3 +183,6 @@
 .price-panel .btc-detail-toggle .toggle-label{flex:1 1 auto;margin:0;color:inherit;font:inherit;white-space:nowrap;text-align:center}
 @media(max-width:639px){.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{column-gap:3px;min-width:95px;padding:0 5px;font-size:12px}}
 
+
+.btc-detail-compare{display:flex;flex-wrap:wrap;align-items:center;gap:5px 12px;min-height:34px;margin:7px 0 0;padding:7px 10px;background:#152136;border:1px solid #2a3953;border-radius:8px;color:#aeb9c9;font-size:12px;line-height:1.35}.btc-detail-compare strong{font-size:15px;white-space:nowrap}.btc-detail-compare span:last-child:not(:first-child){color:#8b94a7}
+@media(max-width:639px){.btc-detail-compare{align-items:flex-start;flex-direction:column;font-size:11px}.btc-detail-compare strong{font-size:14px}}
