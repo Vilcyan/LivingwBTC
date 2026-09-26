@@ -360,12 +360,13 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
   const [interval, setIntervalKey] = useState<DetailInterval>('15m');
   const [points, setPoints] = useState<DetailPoint[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
+  const [compare, setCompare] = useState<number[]>([]);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const controller = new AbortController();
-    const pull = () => { setLoading(true); loadDetail(interval, controller.signal).then(data => { if (!controller.signal.aborted) { setPoints(data); setError(false); setSelected(null); } }).catch(() => { if (!controller.signal.aborted) setError(true); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); };
-    setPoints([]); pull();
+    const pull = () => { setLoading(true); loadDetail(interval, controller.signal).then(data => { if (!controller.signal.aborted) { setPoints(data); setError(false); setSelected(null); setCompare([]); } }).catch(() => { if (!controller.signal.aborted) setError(true); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); };
+    setPoints([]); setCompare([]); pull();
     const timer = window.setInterval(pull, 15 * 60 * 1000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [interval]);
@@ -383,13 +384,24 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
   const line = points.map((point,index) => `${index?'L':'M'}${x(index).toFixed(1)},${y(point.price).toFixed(1)}`).join(' ');
   const lowIndex = points.length ? prices.indexOf(minimum) : -1;
   const highIndex = points.length ? prices.indexOf(maximum) : -1;
+  const compareFirst = compare.length ? points[compare[0]] : null;
+  const compareSecond = compare.length === 2 ? points[compare[1]] : null;
+  const comparePct = compareFirst && compareSecond ? (compareSecond.price / compareFirst.price - 1) * 100 : null;
+  const pickIndex = (clientX: number, svg: SVGSVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    const px = (clientX - rect.left) / rect.width * 940;
+    return Math.max(0, Math.min(points.length - 1, Math.round((px - 58) / 824 * (points.length - 1))));
+  };
   return <section className="btc-detail" aria-label="Chi tiết giá Bitcoin"><div className="btc-detail-top"><div><div className="btc-detail-kicker">GIÁ BTC · {spec.span}</div><h2>Biến động giá Bitcoin</h2></div><div className="btc-detail-tabs" role="group" aria-label="Độ dài mỗi nến">{DETAIL_INTERVALS.map(item => <button key={item.key} type="button" aria-pressed={interval === item.key} onClick={() => setIntervalKey(item.key)}>{item.key}</button>)}</div></div>
     {points.length > 1 && <><div className={`btc-detail-change ${up ? 'up' : 'down'}`}>{up ? '▲ Tăng' : '▼ Sụt'} {Math.abs((last.price/first.price-1)*100).toLocaleString('vi-VN',{ maximumFractionDigits: 2 })}% <span>so với đầu kỳ</span></div><div className="btc-detail-quote"><strong>{money0(current.price, currency)}</strong><time>{detailDate(current.t)} · GMT+7</time></div>
-    <div className="btc-detail-plot"><svg viewBox="0 0 940 304" preserveAspectRatio="none" role="img" aria-label={`Biểu đồ BTC mỗi ${spec.label}, ${spec.span}`} onPointerMove={event => {const rect=event.currentTarget.getBoundingClientRect();const px=(event.clientX-rect.left)/rect.width*940;setSelected(Math.max(0,Math.min(points.length-1,Math.round((px-58)/824*(points.length-1)))));}} onPointerDown={event => { if(event.pointerType === 'touch'){const rect=event.currentTarget.getBoundingClientRect();const px=(event.clientX-rect.left)/rect.width*940;setSelected(Math.max(0,Math.min(points.length-1,Math.round((px-58)/824*(points.length-1)))));}}} onPointerLeave={event => {if(event.pointerType !== 'touch') setSelected(null)}}>
+    <div className="btc-detail-compare" aria-live="polite">{comparePct !== null && compareFirst && compareSecond ? <><strong className={comparePct >= 0 ? 'up' : 'down'}>{comparePct >= 0 ? '▲ Tăng' : '▼ Sụt'} {Math.abs(comparePct).toLocaleString('vi-VN', {maximumFractionDigits: 2})}%</strong><span>1 · {detailDate(compareFirst.t)} ({money0(compareFirst.price, currency)}) → 2 · {detailDate(compareSecond.t)} ({money0(compareSecond.price, currency)})</span><span>Chọn điểm khác để bắt đầu lại.</span></> : <span>{compare.length ? 'Đã chọn điểm 1. Chọn điểm 2 để so sánh.' : 'Chạm hoặc nhấp 2 điểm trên biểu đồ để so sánh giá.'}</span>}</div>
+    <div className="btc-detail-plot"><svg viewBox="0 0 940 304" preserveAspectRatio="none" role="img" aria-label={`Biểu đồ BTC mỗi ${spec.label}, ${spec.span}. Chọn hai điểm để so sánh giá.`} onPointerMove={event => setSelected(pickIndex(event.clientX, event.currentTarget))} onPointerDown={event => {const index = pickIndex(event.clientX, event.currentTarget); setSelected(index); setCompare(previous => previous.length >= 2 ? [index] : [...previous, index]);}} onPointerLeave={event => {if(event.pointerType !== 'touch') setSelected(null)}}>
       <defs><linearGradient id="btc-detail-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={up?'#16c784':'#ea3943'} stopOpacity=".20"/><stop offset="100%" stopColor={up?'#16c784':'#ea3943'} stopOpacity="0"/></linearGradient></defs>
       {[0,.5,1].map((ratio,index)=><g key={index}><line x1="58" x2="882" y1={21+ratio*225} y2={21+ratio*225} stroke="#29354a" strokeDasharray="4 6"/><text x="4" y={25+ratio*225} fill="#94a0b4" fontSize="12">{axisMoney(high-ratio*(high-low),currency)}</text></g>)}
       <path d={`${line} L882,246 L58,246 Z`} fill="url(#btc-detail-fill)"/><path d={line} fill="none" stroke={up?'#16c784':'#ea3943'} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round"/>
       {[{ index: highIndex, color: '#16c784', label: 'Giá cao nhất', dy: -27, tdy: -14 }, { index: lowIndex, color: '#ea3943', label: 'Giá thấp nhất', dy: 24, tdy: 38 }].map(mark => {const cx=x(mark.index); const cy=y(points[mark.index].price); const anchor=cx<150?'start':cx>790?'end':'middle'; return <g key={mark.label}><circle cx={cx} cy={cy} r="7" fill={mark.color} stroke="#0b1220" strokeWidth="2.5"><title>{mark.label}: {money0(points[mark.index].price, currency)} · {detailDate(points[mark.index].t)} GMT+7</title></circle><text x={cx} y={cy+mark.dy} textAnchor={anchor} fill={mark.color} fontSize="12" fontWeight="700">{money0(points[mark.index].price, currency)}</text><text x={cx} y={cy+mark.tdy} textAnchor={anchor} fill="#94a0b4" fontSize="10">{detailDate(points[mark.index].t)}</text></g>;})}
+      {compareFirst && compareSecond && <line x1={x(compare[0])} y1={y(compareFirst.price)} x2={x(compare[1])} y2={y(compareSecond.price)} stroke={comparePct !== null && comparePct >= 0 ? '#16c784' : '#ea3943'} strokeWidth="2" strokeDasharray="5 5" vectorEffect="non-scaling-stroke"/>}
+      {compare.map((index, position) => <g key={position} style={{pointerEvents: 'none'}}><circle cx={x(index)} cy={y(points[index].price)} r="12" fill="#f7931a" stroke="#101a2b" strokeWidth="2" vectorEffect="non-scaling-stroke"/><text x={x(index)} y={y(points[index].price)+4} textAnchor="middle" fill="#101a2b" fontSize="12" fontWeight="800">{position+1}</text></g>)}
       {selected !== null && <><line x1={x(selected)} x2={x(selected)} y1="21" y2="246" stroke="#9aa3b5" strokeDasharray="3 4"/><circle cx={x(selected)} cy={y(current.price)} r="5" fill="#f7931a" stroke="#0b1220" strokeWidth="2"/></>}
       {[0,1,2,3,4,5,6,7].map(index => {const point=points[Math.round((points.length-1)*index/7)]; const date = new Date(point.t); const label = interval==='1w'||interval==='1d' ? detailDate(point.t,true) : new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit'}).format(date);return <text key={index} x={58+824*index/7} y="278" textAnchor={index===0?'start':index===7?'end':'middle'} fill="#94a0b4" fontSize="12">{label}</text>;})}
     </svg>{selected !== null && <div className={`btc-detail-cursor ${y(current.price) < 124 ? 'is-below' : ''}`} style={{ '--cursor-x': `${x(selected) / 940 * 100}%` } as React.CSSProperties}><time>{detailDate(current.t)} · GMT+7</time><strong>{money0(current.price, currency)}</strong></div>}</div></>}
@@ -478,4 +490,4 @@ export function App() {
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} currency={currency} />
   </div></main>;
-                                                                                                                                                                         }
+  }
