@@ -372,7 +372,7 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [points.length > 1]);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -547,4 +547,4 @@ export function App() {
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} currency={currency} />
   </div></main>;
-}
+                                          }
