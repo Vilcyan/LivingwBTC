@@ -319,10 +319,87 @@ function TransactionHistory({ rangeKey, priceTick, currency }: { rangeKey: strin
   ))}</div>;
 }
 
+type DetailInterval = '15m' | '1h' | '4h' | '1d' | '1w';
+type DetailPoint = { t: number; price: number };
+const DETAIL_INTERVALS: { key: DetailInterval; label: string; span: string; limit: number; seconds: number }[] = [
+  { key: '15m', label: '15 phút', span: '7 ngày', limit: 673, seconds: 900 },
+  { key: '1h', label: '1 giờ', span: '30 ngày', limit: 721, seconds: 3600 },
+  { key: '4h', label: '4 giờ', span: '120 ngày', limit: 721, seconds: 14400 },
+  { key: '1d', label: '1 ngày', span: '1 năm', limit: 366, seconds: 86400 },
+  { key: '1w', label: '1 tuần', span: '4 năm', limit: 209, seconds: 604800 },
+];
+const detailDate = (t: number, short = false) => {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', month: '2-digit', year: 'numeric', ...(short ? {} : { day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) }).formatToParts(new Date(t));
+  const get = (kind: string) => parts.find(part => part.type === kind)?.value ?? '';
+  return short ? `T${get('month')}, ${get('year')}` : `${get('hour')}:${get('minute')} ${get('day')}/${get('month')}/${get('year')}`;
+};
+async function loadDetail(interval: DetailInterval, signal: AbortSignal): Promise<DetailPoint[]> {
+  const spec = DETAIL_INTERVALS.find(item => item.key === interval)!;
+  try {
+    const response = await fetch(`https://api.binance.us/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${spec.limit}`, { signal });
+    if (!response.ok) throw new Error('Binance.US unavailable');
+    const raw = await response.json();
+    if (!Array.isArray(raw)) throw new Error('Invalid klines');
+    const points = raw.map((row: unknown[]) => ({t: Number(row[0]), price: Number(row[4])})).filter((point: DetailPoint) => Number.isFinite(point.price) && point.price > 0).slice(-spec.limit);
+    if (points.length < Math.min(100, spec.limit-1)) throw new Error('Incomplete klines');
+    return points;
+  } catch (error) {
+    if (signal.aborted) throw error;
+    const krakenInterval: Record<DetailInterval, number> = { '15m': 15, '1h': 60, '4h': 240, '1d': 1440, '1w': 10080 };
+    const response = await fetch(`https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=${krakenInterval[interval]}`, { signal });
+    if (!response.ok) throw new Error('Kraken unavailable');
+    const raw = await response.json();
+    if (raw.error?.length) throw new Error('Kraken unavailable');
+    const key = Object.keys(raw.result ?? {}).find(item => item !== 'last');
+    const points = (key ? raw.result[key] : []).map((row: unknown[]) => ({ t: Number(row[0]) * 1000, price: Number(row[4]) })).filter((point: DetailPoint) => Number.isFinite(point.price) && point.price > 0).slice(-spec.limit);
+    if (points.length < Math.min(100, spec.limit-1)) throw new Error('Incomplete Kraken klines');
+    return points;
+  }
+}
+function BtcDetailChart({ currency }: { currency: Currency }) {
+  const [interval, setIntervalKey] = useState<DetailInterval>('15m');
+  const [points, setPoints] = useState<DetailPoint[]>([]);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    const pull = () => { setLoading(true); loadDetail(interval, controller.signal).then(data => { if (!controller.signal.aborted) { setPoints(data); setError(false); setSelected(null); } }).catch(() => { if (!controller.signal.aborted) setError(true); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); };
+    setPoints([]); pull();
+    const timer = window.setInterval(pull, 15 * 60 * 1000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [interval]);
+  const spec = DETAIL_INTERVALS.find(item => item.key === interval)!;
+  const first = points[0], last = points[points.length-1];
+  const up = first && last ? last.price >= first.price : true;
+  const current = points[selected ?? points.length-1];
+  const prices = points.map(point => point.price);
+  const minimum = prices.length ? Math.min(...prices) : 0;
+  const maximum = prices.length ? Math.max(...prices) : 1;
+  const pad = Math.max((maximum - minimum) * .12, 70);
+  const low = minimum - pad, high = maximum + pad;
+  const x = (index: number) => 58 + (index / Math.max(points.length-1, 1)) * 824;
+  const y = (price: number) => 21 + ((high-price)/(high-low)) * 225;
+  const line = points.map((point,index) => `${index?'L':'M'}${x(index).toFixed(1)},${y(point.price).toFixed(1)}`).join(' ');
+  return <section className="btc-detail" aria-label="Chi tiết giá Bitcoin"><div className="btc-detail-top"><div><div className="btc-detail-kicker">GIÁ BTC · {spec.span}</div><h2>Biến động giá Bitcoin</h2></div><div className="btc-detail-tabs" role="group" aria-label="Độ dài mỗi nến">{DETAIL_INTERVALS.map(item => <button key={item.key} type="button" aria-pressed={interval === item.key} onClick={() => setIntervalKey(item.key)}>{item.key}</button>)}</div></div>
+    {points.length > 1 && <><div className={`btc-detail-change ${up ? 'up' : 'down'}`}>{up ? '▲ Tăng' : '▼ Sụt'} {Math.abs((last.price/first.price-1)*100).toLocaleString('vi-VN',{ maximumFractionDigits: 2 })}% <span>so với đầu kỳ</span></div><div className="btc-detail-quote"><strong>{money0(current.price, currency)}</strong><time>{detailDate(current.t)} · GMT+7</time></div>
+    <svg viewBox="0 0 940 304" preserveAspectRatio="none" role="img" aria-label={`Biểu đồ BTC mỗi ${spec.label}, ${spec.span}`} onPointerMove={event => {const rect=event.currentTarget.getBoundingClientRect();const px=(event.clientX-rect.left)/rect.width*940;setSelected(Math.max(0,Math.min(points.length-1,Math.round((px-58)/824*(points.length-1)))));}} onPointerLeave={() => setSelected(null)}>
+      <defs><linearGradient id="btc-detail-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={up?'#16c784':'#ea3943'} stopOpacity=".20"/><stop offset="100%" stopColor={up?'#16c784':'#ea3943'} stopOpacity="0"/></linearGradient></defs>
+      {[0,.5,1].map((ratio,index)=><g key={index}><line x1="58" x2="882" y1={21+ratio*225} y2={21+ratio*225} stroke="#29354a" strokeDasharray="4 6"/><text x="4" y={25+ratio*225} fill="#94a0b4" fontSize="12">{axisMoney(high-ratio*(high-low),currency)}</text></g>)}
+      <path d={`${line} L882,246 L58,246 Z`} fill="url(#btc-detail-fill)"/><path d={line} fill="none" stroke={up?'#16c784':'#ea3943'} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round"/>
+      {selected !== null && <><line x1={x(selected)} x2={x(selected)} y1="21" y2="246" stroke="#9aa3b5" strokeDasharray="3 4"/><circle cx={x(selected)} cy={y(current.price)} r="5" fill="#f7931a" stroke="#0b1220" strokeWidth="2"/></>}
+      {[0,1,2,3,4,5,6,7].map(index => {const point=points[Math.round((points.length-1)*index/7)]; const date = new Date(point.t); const label = interval==='1w'||interval==='1d' ? detailDate(point.t,true) : new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit'}).format(date);return <text key={index} x={58+824*index/7} y="278" textAnchor={index===0?'start':index===7?'end':'middle'} fill="#94a0b4" fontSize="12">{label}</text>;})}
+    </svg></>}
+    {!points.length && loading && <p className="btc-detail-status">Đang tải giá BTC...</p>}
+    {error && <p className="btc-detail-error" role="alert">{points.length ? 'Chưa cập nhật được giá mới. Đang giữ dữ liệu gần nhất.' : 'Chưa tải được biểu đồ. Hãy thử lại sau.'}</p>}
+  </section>;
+}
+
 export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const [priceTick, setPriceTick] = useState(0);
   const [currency, setCurrency] = useState<Currency>('USD');
+  const [detailOpen, setDetailOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
   const quote = QUOTES[quoteIndex];
   useEffect(() => {
@@ -362,8 +439,9 @@ export function App() {
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022 với tổng {TXS.length} lượt giao dịch, {BUYS} lần mua và {SELLS} lần bán</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
-      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><button type="button" className="btc-detail-toggle" aria-expanded={detailOpen} aria-controls="btc-detail-chart" onClick={() => setDetailOpen(value => !value)}>{detailOpen ? 'Ẩn đi' : 'Chi tiết'} <span aria-hidden="true">{detailOpen ? '⌃' : '⌄'}</span></button><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
     </section>
+    {detailOpen && <div id="btc-detail-chart"><BtcDetailChart currency={currency} /></div>}
 
     <div className="summaryGrid" aria-label="Tổng quan danh mục">
       <div className="hero-panel primary holdings-card">
@@ -400,4 +478,3 @@ export function App() {
     <p className="closing">Giá BTC hiện tại từ {MARKET.source}, {priceTick ? 'cập nhật trực tiếp mỗi phút' : `cập nhật ${DATA_DATE}`}. Giao dịch và giá vốn từ sheet "My life tối giản" của Mike. Trang chỉ để xem, không mua bán gì ở đây.</p>
   </div></main>;
                                                                                                                         }
-
