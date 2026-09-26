@@ -156,10 +156,6 @@
 @media(max-width:639px){.price-panel .heroValue{font-size:clamp(24px,7.5vw,34px)}.currency-vnd .price-main .heroValue{font-size:clamp(22px,6.6vw,27px)}.price-panel .btc-detail-toggle{padding:0 11px}.btc-detail{padding:20px 12px}.btc-detail-top{display:block}.btc-detail h2{font-size:19px}.btc-detail-tabs{flex-wrap:nowrap;margin-top:14px}.btc-detail-tabs button{flex:1;min-width:0;padding:7px 4px}.btc-detail-quote strong{font-size:20px}.btc-detail-quote time{font-size:11px;padding:7px}.btc-detail svg{min-height:205px}}
 /* Mobile price remains readable alongside the detail button. */
 @media(max-width:639px){.price-panel .price-main .heroValue{font-size:clamp(28px,8vw,34px)}.currency-vnd .price-panel .price-main .heroValue{font-size:clamp(24px,7vw,29px)}.price-panel .price-usd-row{justify-self:start}.price-panel .btc-detail-toggle{font-size:12px;padding:0 9px}.price-panel{column-gap:6px}.price-panel .price-24h{gap:0}.price-panel .price-24h .h24-value{font-size:12px}}
-/* Hover and keyboard focus reveal the quote translation; touch can tap the quote. */
-.quote-window{position:relative}.btc-quote{transition:background .2s ease}.btc-quote .quote-en,.btc-quote .quote-vi{display:block}.btc-quote .quote-vi{display:none}.btc-quote:hover .quote-en,.btc-quote:focus-visible .quote-en,.btc-quote.is-translated .quote-en{display:none}.btc-quote:hover .quote-vi,.btc-quote:focus-visible .quote-vi,.btc-quote.is-translated .quote-vi{display:block}.btc-quote:focus-visible{outline:2px solid #f7931a;outline-offset:3px}.btc-quote{cursor:help}
-
-@media(hover:none){.btc-quote:hover:not(.is-translated) .quote-en{display:block}.btc-quote:hover:not(.is-translated) .quote-vi{display:none}}
 
 
 /* Quiet, balanced price-card action. Keep its tap area and keyboard affordance. */
@@ -172,3 +168,11 @@
 .btc-detail-plot{position:relative}
 .btc-detail-cursor{position:absolute;top:14px;left:clamp(99px,var(--cursor-x),calc(100% - 99px));transform:translateX(-50%);z-index:2;min-width:178px;padding:7px 10px;border:1px solid #465570;border-radius:8px;background:#1a2940;color:#f0f3fa;text-align:center;font-size:12px;line-height:1.4;box-shadow:0 5px 16px rgba(0,0,0,.35);pointer-events:none}
 .btc-detail-cursor time{display:block;color:#c4cedc;white-space:nowrap}.btc-detail-cursor strong{display:block;color:#f7931a;font-size:13px}
+
+
+/* Orange button requested by Mike, with a centered vector chevron and larger label. */
+.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:100px;min-height:42px;padding:0 13px;border:1px solid #f7931a;background:#f7931a;color:#0b1220;border-radius:9px;font:700 14px/1.15 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:0;box-shadow:none;vertical-align:middle}
+.price-panel .btc-detail-toggle:hover{background:#ffa633;border-color:#ffa633}
+.price-panel .btc-detail-toggle .toggle-chevron{flex:none;display:block;width:16px;height:16px;transform:rotate(0deg);transition:transform .18s ease}
+.price-panel .btc-detail-toggle .toggle-chevron.is-open{transform:rotate(180deg)}
+@media(max-width:639px){.price-panel .btc-detail-toggle,.price-panel .btc-detail-toggle:hover,.price-panel .btc-detail-toggle[aria-expanded=true]{min-width:91px;min-height:40px;padding:0 9px;font-size:13px;gap:5px}.price-panel .btc-detail-toggle .toggle-chevron{width:14px;height:14px}}
