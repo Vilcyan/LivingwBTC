@@ -189,6 +189,6 @@
 .btc-detail-point-card{z-index:3;width:var(--card-width);height:34px;left:clamp(var(--card-half),calc(var(--point-x) + var(--point-shift)),calc(100% - var(--card-half)));top:var(--point-y);transform:translate(-50%,calc(-100% - 16px));padding:3px 5px;border:1px solid #f7931a;border-radius:6px;background:#172337;color:#f1f4f8;font-size:11px}
 .btc-detail-point-card.is-below{transform:translate(-50%,16px)}
 .btc-detail-point-card strong,.btc-detail-point-card time{display:block}.btc-detail-point-card time{color:#acb7c8;font-size:9px}.btc-detail-card-price{color:#f7931a}
-.btc-detail-delta{z-index:5;width:70px;height:25px;left:clamp(38px,var(--compare-x),calc(100% - 38px));top:var(--compare-y);transform:translate(-50%,calc(-100% - 7px));padding:3px 2px;border:1px solid currentColor;border-radius:5px;background:#101a2b;font-size:11px;font-weight:800}
+.btc-detail-delta{z-index:5;width:var(--delta-width);height:var(--delta-height);left:clamp(var(--delta-half),var(--compare-x),calc(100% - var(--delta-half)));top:var(--compare-y);transform:translate(-50%,calc(-100% - 7px));padding:2px 4px;border:1px solid currentColor;border-radius:5px;background:#101a2b;font-size:11px;font-weight:800}
 .btc-detail-delta.is-below{transform:translate(-50%,7px)}
 @media(max-width:639px){.btc-detail-point-card{font-size:10px;padding:3px 5px}.btc-detail-point-card time{font-size:9px}.btc-detail-delta{font-size:10px}}
