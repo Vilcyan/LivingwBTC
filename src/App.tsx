@@ -93,16 +93,16 @@ const txOutcome = (transaction: Tx): TxOutcome => {
 };
 
 const QUOTES = [
-  { text: 'Not your keys, not your coins.' },
-  { text: 'Fix the money, fix the world.' },
-  { text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.", author: 'Satoshi Nakamoto' },
-  { text: "The root problem with conventional currency is all the trust that's required to make it work.", author: 'Satoshi Nakamoto' },
-  { text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.", author: 'Satoshi Nakamoto' },
-  { text: 'It might make sense just to get some in case it catches on.', author: 'Satoshi Nakamoto' },
-  { text: 'History shows it is not possible to insulate yourself from the consequences of others holding money that is harder than yours.', author: 'The Bitcoin Standard' },
-  { text: 'Bitcoin is a bank in cyberspace, run by incorruptible software.', author: 'Michael Saylor' },
-  { text: 'Bitcoin is the internet of money.', author: 'Andreas Antonopoulos' },
-  { text: 'Chancellor on brink of second bailout for banks.', author: 'Bitcoin genesis block' },
+  { text: 'Not your keys, not your coins.', vi: "Không giữ khóa riêng, không thật sự sở hữu bitcoin." },
+  { text: 'Fix the money, fix the world.', vi: "Sửa đồng tiền, sửa cả thế giới." },
+  { text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.", author: 'Satoshi Nakamoto', vi: "Nếu bạn không tin hoặc chưa hiểu, tôi không có thời gian để thuyết phục bạn, xin lỗi." },
+  { text: "The root problem with conventional currency is all the trust that's required to make it work.", author: 'Satoshi Nakamoto', vi: "Vấn đề gốc của tiền tệ thông thường là nó đòi hỏi quá nhiều niềm tin để vận hành." },
+  { text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.", author: 'Satoshi Nakamoto', vi: "Đồng coin bị mất khiến coin của người khác có giá trị hơn đôi chút. Hãy xem đó là một khoản tặng cho mọi người." },
+  { text: 'It might make sense just to get some in case it catches on.', author: 'Satoshi Nakamoto', vi: "Có lẽ nên có một ít, phòng khi nó trở nên phổ biến." },
+  { text: 'History shows it is not possible to insulate yourself from the consequences of others holding money that is harder than yours.', author: 'The Bitcoin Standard', vi: "Lịch sử cho thấy bạn không thể tránh hậu quả khi người khác nắm giữ đồng tiền khó tạo ra hơn đồng tiền của bạn." },
+  { text: 'Bitcoin is a bank in cyberspace, run by incorruptible software.', author: 'Michael Saylor', vi: "Bitcoin là một ngân hàng trên không gian mạng, vận hành bằng phần mềm không thể bị mua chuộc." },
+  { text: 'Bitcoin is the internet of money.', author: 'Andreas Antonopoulos', vi: "Bitcoin là internet của tiền tệ." },
+  { text: 'Chancellor on brink of second bailout for banks.', author: 'Bitcoin genesis block', vi: "Bộ trưởng Tài chính đứng trước gói cứu trợ thứ hai dành cho các ngân hàng." },
 ];
 
 const RANGES: { key: string; label: string; from?: number }[] = [
@@ -401,9 +401,10 @@ export function App() {
   const [currency, setCurrency] = useState<Currency>('USD');
   const [detailOpen, setDetailOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
+  const [quoteTranslated, setQuoteTranslated] = useState(false);
   const quote = QUOTES[quoteIndex];
   useEffect(() => {
-    const timer = setInterval(() => setQuoteIndex((index) => (index + 1) % QUOTES.length), 10000);
+    const timer = setInterval(() => { setQuoteTranslated(false); setQuoteIndex((index) => (index + 1) % QUOTES.length); }, 10000);
     return () => clearInterval(timer);
   }, []);
   // Rebase every price-derived number on a live CoinGecko read, then poll once a minute while the page stays open; on any failure keep the last good price (initially the data.ts snapshot).
@@ -434,7 +435,7 @@ export function App() {
   const change24hBase = 1 + CHANGE_24H / 100;
   const valueChange24h = change24hBase > 0 ? VALUE_NOW - VALUE_NOW / change24hBase : 0;
   return <main className="page-shell"><div className={`dark currency-${currency.toLowerCase()}`}>
-    <div className="topbar"><div className="brand-stack"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><div className="quote-window" aria-live="polite"><blockquote className="btc-quote" key={quoteIndex}>“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</blockquote></div></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div></div></div>
+    <div className="topbar"><div className="brand-stack"><div className="brand"><span className="blogo" aria-hidden="true">B</span><span>LivingwBTC</span></div><div className="quote-window" aria-live="polite"><blockquote className={`btc-quote${quoteTranslated ? ' is-translated' : ''}`} key={quoteIndex} tabIndex={0} role="button" aria-label="Nhấn để xem hoặc ẩn bản dịch tiếng Việt" onClick={() => setQuoteTranslated(value => !value)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setQuoteTranslated(value => !value); } }}><span className="quote-en">“{quote.text}”{quote.author && <cite>— {quote.author}</cite>}</span><span className="quote-vi">“{quote.vi}”{quote.author && <cite>— {quote.author}</cite>}</span></blockquote></div></div><div className="topbar-actions"><div className="currency-toggle" role="group" aria-label="Đơn vị tiền"><button type="button" className={currency === 'USD' ? 'active' : ''} aria-pressed={currency === 'USD'} onClick={() => setCurrency('USD')}>USD</button><button type="button" className={currency === 'VND' ? 'active' : ''} aria-pressed={currency === 'VND'} onClick={() => setCurrency('VND')}>VND</button></div></div></div>
     <h1 className="title">Danh mục tích luỹ BTC của Cyan</h1>
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022 với tổng {TXS.length} lượt giao dịch, {BUYS} lần mua và {SELLS} lần bán</p>
 
@@ -475,4 +476,4 @@ export function App() {
     <div className="history-head"><div><h2>Lịch sử giao dịch</h2></div><span>{rangeKey === 'all' ? TXS.length : TXS.filter((tx) => tx.date.startsWith(rangeKey)).length} giao dịch</span></div>
     <TransactionHistory rangeKey={rangeKey} priceTick={priceTick} currency={currency} />
   </div></main>;
-                                                                                                                        }
+                                                                                                                                                                         }
