@@ -28,7 +28,6 @@ const vndShort = (value: number) => {
   return vnd(value);
 };
 const btcFmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
-const timeFmt = (ms: number) => new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
 const pct = (value: number) => `${value > 0 ? '+' : ''}${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
 const dateVi = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const tsDateVi = (ts: number) => dateVi(new Date(ts * 1000).toISOString().slice(0, 10));
@@ -487,7 +486,6 @@ function BtcDetailChart({ currency }: { currency: Currency }) {
 export function App() {
   const [rangeKey, setRangeKey] = useState('all');
   const [priceTick, setPriceTick] = useState(0);
-  const [priceUpdatedAt, setPriceUpdatedAt] = useState<number>(() => Date.parse(MARKET.updatedAt));
   const [currency, setCurrency] = useState<Currency>('USD');
   const [detailOpen, setDetailOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
@@ -497,18 +495,37 @@ export function App() {
     return () => clearInterval(timer);
   }, []);
   // Rebase every price-derived number on a live read, polling once a minute while the page stays open.
-  // Sources are tried in order (CoinGecko first because it also returns the 24h change); if every source
-  // fails, keep the last good price - initially the data.ts snapshot - and the timestamp next to the price
-  // shows how old the displayed value is.
+  // Price sources are tried in order; the 24h change comes from CoinGecko/Coinpaprika, or is computed from
+  // Kraken hourly candles when both are down. If every source fails, keep the last good price and change.
   useEffect(() => {
     let cancelled = false;
-    const sources: { url: string; pick: (data: any) => { price?: number; change?: number } }[] = [
+    const priceSources: { url: string; pick: (data: any) => { price?: number; change?: number } }[] = [
       { url: 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true', pick: (data) => ({ price: data?.bitcoin?.usd, change: data?.bitcoin?.usd_24h_change }) },
       { url: 'https://api.coinbase.com/v2/prices/BTC-USD/spot', pick: (data) => ({ price: Number(data?.data?.amount) }) },
       { url: 'https://api.kraken.com/0/public/Ticker?pair=XBTUSD', pick: (data) => ({ price: Number(data?.result?.XXBTZUSD?.c?.[0]) }) },
     ];
+    const fetchChange24h = async (price: number): Promise<number | undefined> => {
+      try {
+        const response = await fetch('https://api.coinpaprika.com/v1/tickers/btc-bitcoin');
+        if (response.ok) {
+          const change = Number((await response.json())?.quotes?.USD?.percent_change_24h);
+          if (Number.isFinite(change)) return change;
+        }
+      } catch { /* try the next source */ }
+      try {
+        const response = await fetch('https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=60');
+        if (response.ok) {
+          const candles = (await response.json())?.result?.XXBTZUSD;
+          if (Array.isArray(candles) && candles.length > 25) {
+            const close24hAgo = Number(candles[candles.length - 25][4]);
+            if (close24hAgo > 0) return ((price - close24hAgo) / close24hAgo) * 100;
+          }
+        }
+      } catch { /* keep the last change value */ }
+      return undefined;
+    };
     const pull = async () => {
-      for (const source of sources) {
+      for (const source of priceSources) {
         try {
           const response = await fetch(source.url);
           if (!response.ok) continue;
@@ -518,8 +535,10 @@ export function App() {
           VALUE_NOW = HELD * PRICE_NOW;
           UNREALIZED = VALUE_NOW - COST_BASIS;
           UNREALIZED_PCT = (UNREALIZED / COST_BASIS) * 100;
-          if (typeof change === 'number' && Number.isFinite(change)) CHANGE_24H = change;
-          setPriceUpdatedAt(Date.now());
+          let nextChange = typeof change === 'number' && Number.isFinite(change) ? change : undefined;
+          if (nextChange === undefined) nextChange = await fetchChange24h(price);
+          if (cancelled) return;
+          if (nextChange !== undefined) CHANGE_24H = nextChange;
           setPriceTick((tick) => tick + 1);
           return;
         } catch { /* try the next source */ }
@@ -539,7 +558,7 @@ export function App() {
     <p className="intro">Hành trình DCA Bitcoin từ tháng 1/2022 với tổng {TXS.length} lượt giao dịch, {BUYS} lần mua và {SELLS} lần bán</p>
 
     <section className="hero-grid" aria-label="Giá Bitcoin hiện tại">
-      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><button type="button" className="btc-detail-toggle" aria-expanded={detailOpen} aria-controls="btc-detail-chart" onClick={() => setDetailOpen(value => !value)}><span className="toggle-label">{detailOpen ? 'ẨN ĐI' : 'CHI TIẾT'}</span><svg aria-hidden="true" className={detailOpen ? 'toggle-chevron is-open' : 'toggle-chevron'} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)} <span className={`price-updated${Date.now() - priceUpdatedAt > 10 * 60 * 1000 ? ' stale' : ''}`}>· Cập nhật lúc {timeFmt(priceUpdatedAt)}</span></div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
+      <div className="hero-panel price-panel"><div className="heroLabel">Giá 1 BTC hiện tại</div><button type="button" className="btc-detail-toggle" aria-expanded={detailOpen} aria-controls="btc-detail-chart" onClick={() => setDetailOpen(value => !value)}><span className="toggle-label">{detailOpen ? 'ẨN ĐI' : 'CHI TIẾT'}</span><svg aria-hidden="true" className={detailOpen ? 'toggle-chevron is-open' : 'toggle-chevron'} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button><div className="price-main"><div className="price-usd-row"><div className="heroValue"><RollingPrice key={currency} text={money0(PRICE_NOW, currency)} /></div><div className="price-24h"><div className="h24-label">24h</div><div className={`h24-value ${CHANGE_24H >= 0 ? 'up' : 'down'}`}>{CHANGE_24H >= 0 ? '▲' : '▼'} {pct(CHANGE_24H)}</div></div></div><div className="heroVnd">≈ {currency === 'USD' ? vnd(PRICE_NOW * VND_RATE) : usd0(PRICE_NOW)}</div></div><div className="heroSub"><span>Trung bình giá {money0(AVG_COST, currency)}</span></div></div>
     </section>
     {detailOpen && <div id="btc-detail-chart"><BtcDetailChart currency={currency} /></div>}
 
