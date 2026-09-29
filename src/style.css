@@ -192,3 +192,6 @@
 .btc-detail-delta{z-index:5;width:var(--delta-width);height:var(--delta-height);left:clamp(var(--delta-half),var(--compare-x),calc(100% - var(--delta-half)));top:var(--compare-y);transform:translate(-50%,calc(-100% - 7px));padding:2px 4px;border:1px solid currentColor;border-radius:5px;background:#101a2b;font-size:11px;font-weight:800}
 .btc-detail-delta.is-below{transform:translate(-50%,7px)}
 @media(max-width:639px){.btc-detail-point-card{font-size:10px;padding:3px 5px}.btc-detail-point-card time{font-size:9px}.btc-detail-delta{font-size:10px}}
+/* Timestamp next to the alternate-currency line; turns orange once the displayed price is older than 10 minutes. */
+.price-updated{color:#8b94a7;font-size:12px;font-weight:400;white-space:nowrap}
+.price-updated.stale{color:#f7931a}
