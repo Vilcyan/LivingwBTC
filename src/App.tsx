@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './style.css';
 import { PRICES, TXS, MARKET, type Tx } from './data';
 
-// Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 20/09/2026.
-const AVG_COST = 95380;
-const COST_BASIS = 6016.59;
-const REALIZED = -100.64;
+// Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 06/10/2026.
+const AVG_COST = 95695.91;
+const COST_BASIS = 6019.32;
+const REALIZED = -127.9107448;
 const VND_RATE = 26022;
 const DATA_DATE = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(MARKET.updatedAt));
 
@@ -69,10 +69,11 @@ interface TxOutcome { total: number; pnl: number; pnlPct: number; totalLabel: st
 // Realized results are copied from the source sheet's transaction-basis columns.
 // Keyed by sell date because each recorded sell date is unique in this snapshot.
 const REALIZED_BY_DATE: Record<string, { pnl: number; pnlPct: number }> = {
-  '2025-08-14': { pnl: 109.8184842, pnlPct: 28.54938164 },
-  '2025-08-22': { pnl: 12.67596578, pnlPct: 17.57523123 },
-  '2025-09-23': { pnl: 32.21689436, pnlPct: 16.7132057 },
-  '2026-07-30': { pnl: -255.3519269, pnlPct: -33.36402971 },
+  '2025-08-14': { pnl: 109.1643679, pnlPct: 28.33115472244034 },
+  '2025-08-22': { pnl: 12.55331898, pnlPct: 17.375634150619145 },
+  '2025-09-23': { pnl: 31.76996609, pnlPct: 16.443227842296693 },
+  '2026-07-30': { pnl: -257.8740352, pnlPct: -33.582856481510575 },
+  '2026-10-06': { pnl: -23.52436265, pnlPct: -16.388217701978842 },
 };
 
 const txOutcome = (transaction: Tx): TxOutcome => {
