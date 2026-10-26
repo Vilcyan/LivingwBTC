@@ -38,7 +38,9 @@ try {
 
 try {
   const now = Math.floor(Date.now() / 1000);
-  const from = prices[0]?.[0] || Math.floor(new Date('2022-01-01T00:00:00Z').getTime() / 1000);
+  // CoinGecko's free range endpoint rejects spans over 365 days, so only ask for the days after the last stored point.
+  const lastKnown = prices[prices.length - 1]?.[0] || Math.floor(new Date('2022-01-01T00:00:00Z').getTime() / 1000);
+  const from = Math.max(lastKnown - 3 * 86400, now - 360 * 86400);
   const chart = await json(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=usd&from=${from}&to=${now}`);
   const byDay = new Map(prices.map(([ts, price]) => [Math.floor(ts / 86400) * 86400, price]));
   for (const [ms, price] of chart.prices || []) {
