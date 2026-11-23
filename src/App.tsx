@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './style.css';
 import { PRICES, TXS, MARKET, type Tx } from './data';
 
-// Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 16/11/2026.
-const AVG_COST = 88683.1;
-const COST_BASIS = 9064.14;
+// Snapshot constants from the user's "My life tối giản" sheet, tab "BTC (mẫu mới)", 23/11/2026.
+const AVG_COST = 88361.913023;
+const COST_BASIS = 9139.042039388834;
 const REALIZED = -127.9107448;
 const VND_RATE = 26022;
 const DATA_DATE = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(MARKET.updatedAt));
